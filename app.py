@@ -2,11 +2,10 @@
 
 from aws_cdk import core
 
-from hello.hello_stack import MyStack
+from infrastructure.website.stack import WebsiteStack
 
 
 app = core.App()
-MyStack(app, "hello-cdk-1", env={"region": "us-east-2"})
-MyStack(app, "hello-cdk-2", env={"region": "us-west-2"})
+WebsiteStack(app, "website", env={"region": "eu-central-1"})
 
 app.synth()
