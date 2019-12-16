@@ -1,6 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
+    Tag,
 )
 from aws_cdk.aws_autoscaling import AutoScalingGroup
 from aws_cdk.aws_ec2 import (
@@ -19,6 +20,11 @@ from aws_cdk.aws_ecs import (
     EcsOptimizedImage,
     ICluster,
 )
+from aws_cdk.aws_s3 import (
+    Bucket,
+    BucketEncryption,
+    BlockPublicAccess,
+)
 
 
 class CoreStack(Stack):
@@ -28,6 +34,8 @@ class CoreStack(Stack):
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        Tag.add(self, "Stack", "Core")
 
         # NAT Gateways are very expensive; instead, run our own NAT Instance.
         # The only production traffic going through it, is the UDP traffic
@@ -50,6 +58,12 @@ class CoreStack(Stack):
 #            ip_address_type=IpAddressType.DUAL_STACK,
         )
 
+        logs_bucket = Bucket(self, "AccessLogs",
+           encryption=BucketEncryption.KMS_MANAGED,
+           block_public_access=BlockPublicAccess.BLOCK_ALL,
+        )
+        self.alb.log_access_logs(logs_bucket)
+
         self.cluster = Cluster(self, "Cluster",
             vpc=self.vpc,
         )
@@ -68,10 +82,4 @@ class CoreStack(Stack):
         # This currently cannot be done via CDK; suggested solutions:
         #  https://gist.github.com/milesjordan/d86942718f8d4dc20f9f331913e7367a
         #  https://docs.aws.amazon.com/cdk/latest/guide/cfn_layer.html
-
-        # TODO -- Create VM to route all IPv6 traffic to NLB (NLB doesn't
-        # support IPv6). This should add PROXY protocol to still allow finding
-        # the original IPv6. nginx currently is the only one supporting this
-        # with UDP and TCP, but only supports PROXY protocol v1.
-        # This means that if we enable PROXY protocol on the NLB for IPv4,
-        # all applications get a mix of v1/v2, depending on the source.
+        # TODO -- Enable IPv6 on ALB

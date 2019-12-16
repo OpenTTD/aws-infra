@@ -2,6 +2,7 @@ from aws_cdk.core import (
     Construct,
     Duration,
     Stack,
+    Tag,
 )
 from aws_cdk.aws_certificatemanager import (
     DnsValidatedCertificate,
@@ -12,23 +13,31 @@ from aws_cdk.aws_elasticloadbalancingv2 import (
     ApplicationProtocol,
     HealthCheck,
 )
-from aws_cdk.aws_route53 import HostedZone
+from aws_cdk.aws_route53 import (
+    ARecord,
+    HostedZone,
+    RecordTarget,
+)
+from aws_cdk.aws_route53_targets import LoadBalancerTarget
 
 from infrastructure.core.core import CoreStack
 
 
-class HTTPSListenerStack(Stack):
+class ListenerHTTPSStack(Stack):
     """Stack that handles the HTTPS Listener on the ALB."""
 
-    def __init__(self, scope: Construct, id: str, core: CoreStack, hosted_zone_name: str, domain_name: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, core: CoreStack, hosted_zone_name: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        Tag.add(self, "Stack", "Listener-HTTPS")
+
+        self._hosted_zone_name = hosted_zone_name
         self._hosted_zone = HostedZone.from_lookup(self, "Zone",
             domain_name=hosted_zone_name,
         )
-        self._domain_name = domain_name
 
-        self._https_listener = ApplicationListener(self, "HTTPSListener",
+        self._alb = core.alb
+        self._listener = ApplicationListener(self, "Listener-HTTPS",
             load_balancer=core.alb,
             port=443,
             protocol=ApplicationProtocol.HTTPS,
@@ -36,8 +45,13 @@ class HTTPSListenerStack(Stack):
 
         self._priority = 1
 
+    def set_current_domain_name(self, domain_name: str):
+        if not domain_name.endswith(self._hosted_zone_name):
+            raise Exception("Domain name should end with the name of the hosted zone!")
+        self._domain_name = domain_name
+
     def _add_certificate(self, fqdn: str) -> None:
-        certificate = DnsValidatedCertificate(self, fqdn,
+        certificate = DnsValidatedCertificate(self, f"{fqdn}-Certificate",
             hosted_zone=self._hosted_zone,
             domain_name=fqdn,
             validation_domains={
@@ -46,7 +60,7 @@ class HTTPSListenerStack(Stack):
             validation_method=ValidationMethod.DNS,
         )
 
-        self._https_listener.add_certificate_arns(fqdn,
+        self._listener.add_certificate_arns(fqdn,
             arns=[certificate.certificate_arn],
         )
 
@@ -62,10 +76,17 @@ class HTTPSListenerStack(Stack):
 
     def add_targets(self, subdomain_name: str, port: int, service):
         fqdn = f"{subdomain_name}.{self._domain_name}"
+        record_name = fqdn[0:-len(self._hosted_zone_name)-1]
 
         self._add_certificate(fqdn)
 
-        self._https_listener.add_targets(fqdn,
+        ARecord(self, f"{fqdn}-arecord",
+            target=RecordTarget.from_alias(LoadBalancerTarget(self._alb)),
+            zone=self._hosted_zone,
+            record_name=record_name,
+        )
+
+        self._listener.add_targets(fqdn,
             health_check=self._get_health_check(),
             port=port,
             protocol=ApplicationProtocol.HTTP,
@@ -78,7 +99,7 @@ class HTTPSListenerStack(Stack):
     def add_default_target(self, port: int, service):
         self._add_certificate(self._domain_name)
 
-        self._https_listener.add_targets(self._domain_name,
+        self._listener.add_targets(self._domain_name,
             health_check=self._get_health_check(),
             port=port,
             protocol=ApplicationProtocol.HTTP,
