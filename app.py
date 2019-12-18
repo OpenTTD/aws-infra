@@ -9,6 +9,7 @@ from aws_cdk.core import (
 )
 
 from infrastructure.core.core import CoreStack
+from infrastructure.core.certificate import CertificateStack
 from infrastructure.core.listener_https import ListenerHTTPSStack
 from infrastructure.core.parameter_store import ParameterStoreStack
 from infrastructure.https.binaries_proxy import BinaryProxyStack
@@ -42,17 +43,21 @@ Tag.add(app, "Env", env_type.value)
 parameter_store = ParameterStoreStack(app, f"{env_type.value}-ParameterStore",
     env=env,
 )
+certificate = CertificateStack(app, f"{env_type.value}-Certificate",
+    hosted_zone_name=hosted_zone,
+    env=env,
+)
 core = CoreStack(app, f"{env_type.value}-Core",
     env=env,
 )
 
 listener_https = ListenerHTTPSStack(app, f"{env_type.value}-Listener-HTTPS",
     core=core,
-    hosted_zone_name=hosted_zone,
+    certificate=certificate,
     env=env,
 )
 
-listener_https.set_current_domain_name(domain_names[False])
+certificate.set_current_domain_name(domain_names[False])
 https_kwargs = {
     "core": core,
     "listener_https": listener_https,
@@ -60,16 +65,16 @@ https_kwargs = {
     "is_staging": False,
     "env": env,
 }
-DefaultBackendStack(app, f"{env_type.value}Default", **https_kwargs)
+DefaultBackendStack(app, f"{env_type.value}-DefaultBackend", **https_kwargs)
 
 
 for is_staging in (True, False):
     if is_staging:
         prefix = f"{env_type.value}-Staging-"
     else:
-        prefix = f"{env_type.value}-"
+        prefix = f"{env_type.value}-Production-"
 
-    listener_https.set_current_domain_name(domain_names[is_staging])
+    certificate.set_current_domain_name(domain_names[is_staging])
     https_kwargs["is_staging"] = is_staging
 
     WebsiteStack(app, f"{prefix}Website", **https_kwargs)
