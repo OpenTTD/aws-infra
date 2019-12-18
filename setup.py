@@ -19,6 +19,13 @@ setuptools.setup(
     packages=setuptools.find_packages(where="infrastructure"),
 
     install_requires=[
+        "aws-cdk.aws-certificatemanager",
+        "aws-cdk.aws-ecs",
+        "aws-cdk.aws-elasticloadbalancingv2",
+        "aws-cdk.aws-logs",
+        "aws-cdk.aws-route53",
+        "aws-cdk.aws-s3",
+        "aws-cdk.aws-ssm",
         "aws-cdk.core",
     ],
 
