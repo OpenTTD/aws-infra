@@ -15,13 +15,19 @@ class ParameterStoreStack(Stack):
     behaviour happening.
     """
 
-    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, prefix: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tag.add(self, "Stack", "ParameterStore")
 
+        self._prefix = prefix
+
     def add_parameter(self, name, default=None):
-        StringParameter(self, name,
+        parameter_name = f"{self._prefix}{name}"
+
+        StringParameter(self, parameter_name,
             string_value=default,
-            parameter_name=name,
+            parameter_name=parameter_name,
         )
+
+        return parameter_name

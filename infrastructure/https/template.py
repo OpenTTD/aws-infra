@@ -57,8 +57,8 @@ class HTTPSTemplateStack(Stack):
 
         log_group = LogGroup(self, "LogGroup")
 
-        parameter_store.add_parameter(name, default="1")
-        tag = Token.as_string(StringParameter.value_for_string_parameter(self, name))
+        parameter_name = parameter_store.add_parameter(name, default="1")
+        tag = Token.as_string(StringParameter.value_for_string_parameter(self, parameter_name))
         image = StringConcat().join(f"{self.image}:", tag)
 
         container = task_definition.add_container("Container",
