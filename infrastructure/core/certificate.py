@@ -17,6 +17,8 @@ class CertificateStack(Stack):
     def __init__(self, scope: Construct, id: str, hosted_zone_name: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        self._last_certificate = None  # type: DnsValidatedCertificate
+
         Tag.add(self, "Stack", "Certificate")
 
         self.hosted_zone_name = hosted_zone_name
@@ -38,5 +40,14 @@ class CertificateStack(Stack):
             },
             validation_method=ValidationMethod.DNS,
         )
+
+        # With more than 4 certificates, we hit the rate limiter, as
+        # CustomResources are all triggered at the same time. To prevent this,
+        # we make all the CustomResource nodes inside DnsValidatedCertificate
+        # depend on each other. This means that one has to finish before the
+        # next is started, preventing this issue.
+        if self._last_certificate is not None:
+            certificate.node.children[-1].node.add_dependency(self._last_certificate.node.children[-1])
+        self._last_certificate = certificate
 
         return certificate
