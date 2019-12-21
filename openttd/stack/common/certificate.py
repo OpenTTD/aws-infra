@@ -5,10 +5,8 @@ from aws_cdk.core import (
 )
 from aws_cdk.aws_certificatemanager import (
     DnsValidatedCertificate,
-    ICertificate,
     ValidationMethod,
 )
-from aws_cdk.aws_route53 import HostedZone
 from typing import Optional
 
 from openttd.stack.common import dns

@@ -8,12 +8,9 @@ from aws_cdk.aws_iam import (
     ServicePrincipal,
 )
 from aws_cdk.aws_logs import LogGroup
-from aws_cdk.aws_ssm import StringParameter
 from typing import Optional
 
-from openttd.enumeration import Maturity
-
-g_tasks = None  # type: Optional[ParameterStoreStack]
+g_tasks = None  # type: Optional[TasksStack]
 
 
 class TasksStack(Stack):
@@ -45,7 +42,7 @@ class TasksStack(Stack):
     def add_logging(self, name: str) -> LogGroup:
         return LogGroup(self, f"LogGroup-{name}")
 
-    def add_role(self, name: str) ->  Role:
+    def add_role(self, name: str) -> Role:
         return Role(self, f"Role-{name}",
             assumed_by=ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
@@ -56,6 +53,7 @@ def add_logging(name: str) -> str:
         raise Exception("No TasksStack instance exists")
 
     return g_tasks.add_logging(name)
+
 
 def add_role(name: str) -> str:
     if g_tasks is None:

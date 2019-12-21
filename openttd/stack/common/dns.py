@@ -39,11 +39,13 @@ def get_hosted_zone_name() -> str:
 
     return g_hosted_zone_name
 
+
 def get_hosted_zone() -> HostedZone:
     if g_hosted_zone is None:
         raise Exception("No DNSStack instance exists")
 
     return g_hosted_zone
+
 
 def set_domain_name(domain_name: str) -> None:
     global g_domain_name
@@ -56,6 +58,7 @@ def set_domain_name(domain_name: str) -> None:
 
     g_domain_name = domain_name
 
+
 def subdomain_to_fqdn(subdomain_name: str) -> str:
     if g_domain_name is None:
         raise Exception("No domain name was ever set")
@@ -64,6 +67,7 @@ def subdomain_to_fqdn(subdomain_name: str) -> str:
         return g_domain_name
 
     return f"{subdomain_name}.{g_domain_name}"
+
 
 def get_domain_name() -> str:
     if g_domain_name is None:

@@ -1,27 +1,16 @@
-from aws_cdk.core import (
-    CfnOutput,
-    Construct,
-    Stack,
-    StringConcat,
-    Tag,
-    Token,
-)
-from aws_cdk.aws_cloudformation import NestedStack
+from aws_cdk.core import Construct
 from aws_cdk.aws_ecs import (
     BuiltInAttributes,
     ContainerImage,
     Ec2Service,
     Ec2TaskDefinition,
     ICluster,
-    LogDriver,
     LogDrivers,
     NetworkMode,
     PortMapping,
     PlacementStrategy,
     Protocol,
 )
-
-from aws_cdk.aws_ssm import StringParameter
 
 from openttd.construct.image_from_parameter_store import ImageFromParameterStore
 from openttd.stack.common import (

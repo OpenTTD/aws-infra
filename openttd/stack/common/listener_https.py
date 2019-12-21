@@ -4,10 +4,6 @@ from aws_cdk.core import (
     Stack,
     Tag,
 )
-from aws_cdk.aws_certificatemanager import (
-    DnsValidatedCertificate,
-    ValidationMethod,
-)
 from aws_cdk.aws_elasticloadbalancingv2 import (
     ApplicationListener,
     ApplicationProtocol,
@@ -25,7 +21,7 @@ from openttd.construct.dns import (
 )
 from openttd.stack.common import certificate
 
-g_listener_https = None  # type: Optional[ListenerHTTPSStack]
+g_listener_https = None  # type: Optional[ListenerHttpsStack]
 
 
 class ListenerHttpsStack(Stack):
@@ -126,6 +122,7 @@ class ListenerHttpsStack(Stack):
             fqdn=cert.fqdn,
             target=LoadBalancerTarget(self._alb),
         )
+
 
 def add_targets(subdomain_name: str, port: int, service: IApplicationLoadBalancerTarget) -> None:
     if g_listener_https is None:

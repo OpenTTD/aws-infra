@@ -4,32 +4,15 @@ from aws_cdk.core import (
     Stack,
     Tag,
 )
-from aws_cdk.aws_autoscaling import AutoScalingGroup
 from aws_cdk.aws_ec2 import (
     CfnInternetGateway,
     CfnSubnet,
     CfnVPCCidrBlock,
-    CfnVPCGatewayAttachment,
     InstanceType,
     IVpc,
     NatProvider,
     RouterType,
     Vpc,
-)
-from aws_cdk.aws_elasticloadbalancingv2 import (
-    ApplicationLoadBalancer,
-    IApplicationLoadBalancer,
-    IpAddressType,
-)
-from aws_cdk.aws_ecs import (
-    Cluster,
-    EcsOptimizedImage,
-    ICluster,
-)
-from aws_cdk.aws_s3 import (
-    Bucket,
-    BucketEncryption,
-    BlockPublicAccess,
 )
 
 
