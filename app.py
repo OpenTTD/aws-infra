@@ -8,77 +8,94 @@ from aws_cdk.core import (
     Tag,
 )
 
-from infrastructure.core.core import CoreStack
-from infrastructure.core.certificate import CertificateStack
-from infrastructure.core.listener_https import ListenerHTTPSStack
-from infrastructure.core.parameter_store import ParameterStoreStack
-from infrastructure.https.binaries_proxy import BinaryProxyStack
-from infrastructure.https.default_backend import DefaultBackendStack
-from infrastructure.https.website import WebsiteStack
-from infrastructure.enumeration import EnvType
+from openttd.enumeration import (
+    Deployment,
+    Maturity,
+)
+from openttd.stack.application.binaries_proxy import BinariesProxyStack
+from openttd.stack.application.website import WebsiteStack
+from openttd.stack.common import dns
+from openttd.stack.common.alb import AlbStack
+from openttd.stack.common.certificate import CertificateStack
+from openttd.stack.common.dns import DnsStack
+from openttd.stack.common.ecs import EcsStack
+from openttd.stack.common.listener_https import ListenerHttpsStack
+from openttd.stack.common.parameter_store import ParameterStoreStack
+from openttd.stack.common.tasks import TasksStack
+from openttd.stack.common.vpc import VpcStack
 
+### Begin of onfiguration
 
-env_type = EnvType.DEVELOPMENT
-
+maturity = Maturity.DEVELOPMENT
 env = {
     "region": "eu-central-1",
     "account": os.getenv('AWS_ACCOUNT_ID'),
 }
-hosted_zone = "openttd.org"
+hosted_zone_name = "openttd.org"
 
-if env_type == EnvType.PRODUCTION:
+### End of configuration
+
+if maturity == Maturity.DEVELOPMENT:
     domain_names = {
-        False: "openttd.org",
-        True: "staging.openttd.org",
+        Deployment.PRODUCTION: f"dev.{hosted_zone_name}",
+        Deployment.STAGING: f"staging.dev.{hosted_zone_name}",
     }
 else:
     domain_names = {
-        False: "aws.openttd.org",
-        True: "staging.aws.openttd.org",
+        Deployment.PRODUCTION: f"{hosted_zone_name}",
+        Deployment.STAGING: f"staging.{hosted_zone_name}",
     }
 
 app = App()
-Tag.add(app, "Env", env_type.value)
+Tag.add(app, "Maturity", maturity.value)
 
-parameter_store = ParameterStoreStack(app, f"{env_type.value}-ParameterStore",
+prefix = f"{maturity.value}-Common-"
+
+DnsStack(app, f"{prefix}Dns",
+    hosted_zone_name=hosted_zone_name,
     env=env,
 )
-certificate = CertificateStack(app, f"{env_type.value}-Certificate",
-    hosted_zone_name=hosted_zone,
+TasksStack(app, f"{prefix}Tasks",
     env=env,
 )
-core = CoreStack(app, f"{env_type.value}-Core",
+ParameterStoreStack(app, f"{prefix}ParameterStore",
+    maturity=maturity,
+    env=env,
+)
+CertificateStack(app, f"{prefix}Certificate",
+    env=env,
+)
+vpc = VpcStack(app, f"{prefix}Vpc",
+    env=env,
+)
+alb = AlbStack(app, f"{prefix}Alb",
+    vpc=vpc.vpc,
+    env=env,
+)
+ecs = EcsStack(app, f"{prefix}Ecs",
+    vpc=vpc.vpc,
     env=env,
 )
 
-listener_https = ListenerHTTPSStack(app, f"{env_type.value}-Listener-HTTPS",
-    core=core,
-    certificate=certificate,
+ListenerHttpsStack(app, f"{prefix}Listener-Https",
+    alb=alb.alb,
     env=env,
 )
 
-certificate.set_current_domain_name(domain_names[False])
-https_kwargs = {
-    "core": core,
-    "listener_https": listener_https,
-    "parameter_store": parameter_store,
-    "is_staging": False,
-    "env": env,
-}
-DefaultBackendStack(app, f"{env_type.value}-DefaultBackend", **https_kwargs)
 
+for deployment in Deployment:
+    prefix = f"{maturity.value}-{deployment.value}-"
+    dns.set_domain_name(domain_names[deployment])
 
-for is_staging in (True, False):
-    if is_staging:
-        prefix = f"{env_type.value}-Staging-"
-    else:
-        prefix = f"{env_type.value}-Production-"
-
-    certificate.set_current_domain_name(domain_names[is_staging])
-    https_kwargs["is_staging"] = is_staging
-
-    WebsiteStack(app, f"{prefix}Website", **https_kwargs)
-    BinaryProxyStack(app, f"{prefix}BinariesProxy", **https_kwargs)
-
+    WebsiteStack(app, f"{prefix}Website",
+        deployment=deployment,
+        cluster=ecs.cluster,
+        env=env,
+    )
+    BinariesProxyStack(app, f"{prefix}BinariesProxy",
+        deployment=deployment,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
 app.synth()
