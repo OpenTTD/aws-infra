@@ -35,7 +35,7 @@ class BinariesProxyStack(Stack):
             priority = 120
 
         ECSHTTPSContainer(self, self.application,
-            subdomain_name="binaries-proxy",
+            subdomain_name="proxy.binaries",
             application_name=f"{deployment.value}-{self.application}",
             image_name="openttd/binaries-proxy",
             port=80,
