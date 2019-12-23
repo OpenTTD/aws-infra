@@ -27,9 +27,12 @@ class BinariesProxyStack(Stack):
 
         external.add_stack(self)
 
-        desired_count = 1
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
+            priority = 20
+        else:
+            desired_count = 1
+            priority = 120
 
         ECSHTTPSContainer(self, self.application,
             subdomain_name="binaries-proxy",
@@ -39,4 +42,5 @@ class BinariesProxyStack(Stack):
             memory_limit_mib=128,
             desired_count=desired_count,
             cluster=cluster,
+            priority=priority,
             )

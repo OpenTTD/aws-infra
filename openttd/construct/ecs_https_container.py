@@ -31,7 +31,8 @@ class ECSHTTPSContainer(Construct):
                  port: int,
                  memory_limit_mib: int,
                  desired_count: int,
-                 cluster: ICluster) -> None:
+                 cluster: ICluster,
+                 priority: int) -> None:
         super().__init__(scope, id)
 
         log_group = tasks.add_logging(application_name)
@@ -80,4 +81,5 @@ class ECSHTTPSContainer(Construct):
             subdomain_name=subdomain_name,
             port=port,
             service=service,
+            priority=priority,
         )

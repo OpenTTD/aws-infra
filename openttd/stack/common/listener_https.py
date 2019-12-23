@@ -78,11 +78,6 @@ class ListenerHttpsStack(Stack):
             protocol="HTTPS",
         )
 
-        # Every entry needs an unique priority, but as all entries have an
-        # unique filter, for us this is not relevant. So just make a simple
-        # counter to make sure CloudFormation is happy about it.
-        self._priority = 1
-
         if g_listener_https is not None:
             raise Exception("Only a single ListenerHTTPSStack instance can exist")
         g_listener_https = self
@@ -97,7 +92,11 @@ class ListenerHttpsStack(Stack):
             unhealthy_threshold_count=2,
         )
 
-    def add_targets(self, subdomain_name: str, port: int, service: IApplicationLoadBalancerTarget):
+    def add_targets(self,
+                    subdomain_name: str,
+                    port: int,
+                    service: IApplicationLoadBalancerTarget,
+                    priority: int) -> None:
         cert = certificate.add_certificate(subdomain_name)
 
         self._listener.add_certificate_arns(cert.fqdn,
@@ -113,9 +112,8 @@ class ListenerHttpsStack(Stack):
             protocol=ApplicationProtocol.HTTP,
             targets=[service],
             host_header=cert.fqdn,
-            priority=self._priority,
+            priority=priority,
         )
-        self._priority += 1
 
         ARecord(self, f"{cert.fqdn}-ARecord",
             fqdn=cert.fqdn,
@@ -127,8 +125,11 @@ class ListenerHttpsStack(Stack):
         )
 
 
-def add_targets(subdomain_name: str, port: int, service: IApplicationLoadBalancerTarget) -> None:
+def add_targets(subdomain_name: str,
+                port: int,
+                service: IApplicationLoadBalancerTarget,
+                priority: int) -> None:
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(subdomain_name, port, service)
+    return g_listener_https.add_targets(subdomain_name, port, service, priority)
