@@ -7,6 +7,7 @@ from aws_cdk.aws_ecs import ICluster
 
 from openttd.construct.ecs_https_container import ECSHTTPSContainer
 from openttd.enumeration import Deployment
+from openttd.stack.common import external
 
 
 class WebsiteStack(Stack):
@@ -23,6 +24,8 @@ class WebsiteStack(Stack):
 
         Tag.add(self, "Application", self.application)
         Tag.add(self, "Deployment", deployment.value)
+
+        external.add_stack(self)
 
         desired_count = 1
         if deployment == Deployment.PRODUCTION:

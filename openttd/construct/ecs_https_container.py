@@ -14,6 +14,7 @@ from aws_cdk.aws_ecs import (
 
 from openttd.construct.image_from_parameter_store import ImageFromParameterStore
 from openttd.stack.common import (
+    external,
     listener_https,
     tasks,
 )
@@ -69,6 +70,7 @@ class ECSHTTPSContainer(Construct):
             task_definition=task_definition,
             desired_count=desired_count,
         )
+        external.add_service(service)
 
         service.add_placement_strategies(
             PlacementStrategy.spread_across(BuiltInAttributes.AVAILABILITY_ZONE),

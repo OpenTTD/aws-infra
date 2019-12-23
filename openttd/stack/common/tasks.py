@@ -10,6 +10,8 @@ from aws_cdk.aws_iam import (
 from aws_cdk.aws_logs import LogGroup
 from typing import Optional
 
+from openttd.stack.common import external
+
 g_tasks = None  # type: Optional[TasksStack]
 
 
@@ -43,19 +45,21 @@ class TasksStack(Stack):
         return LogGroup(self, f"LogGroup-{name}")
 
     def add_role(self, name: str) -> Role:
-        return Role(self, f"Role-{name}",
+        role = Role(self, f"Role-{name}",
             assumed_by=ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
+        external.add_role(role)
+        return role
 
 
-def add_logging(name: str) -> str:
+def add_logging(name: str) -> LogGroup:
     if g_tasks is None:
         raise Exception("No TasksStack instance exists")
 
     return g_tasks.add_logging(name)
 
 
-def add_role(name: str) -> str:
+def add_role(name: str) -> Role:
     if g_tasks is None:
         raise Exception("No TasksStack instance exists")
 

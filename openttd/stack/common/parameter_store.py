@@ -7,6 +7,7 @@ from aws_cdk.aws_ssm import StringParameter
 from typing import Optional
 
 from openttd.enumeration import Maturity
+from openttd.stack.common import external
 
 g_parameter_store = None  # type: Optional[ParameterStoreStack]
 
@@ -41,10 +42,11 @@ class ParameterStoreStack(Stack):
     def add_parameter(self, name: str, default: str) -> str:
         parameter_name = f"{self._maturity}-{name}"
 
-        StringParameter(self, parameter_name,
+        parameter = StringParameter(self, parameter_name,
             string_value=default,
             parameter_name=parameter_name,
         )
+        external.add_parameter(parameter)
 
         return parameter_name
 

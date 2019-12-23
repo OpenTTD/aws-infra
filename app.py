@@ -19,6 +19,7 @@ from openttd.stack.common.alb import AlbStack
 from openttd.stack.common.certificate import CertificateStack
 from openttd.stack.common.dns import DnsStack
 from openttd.stack.common.ecs import EcsStack
+from openttd.stack.common.external import ExternalStack
 from openttd.stack.common.listener_https import ListenerHttpsStack
 from openttd.stack.common.parameter_store import ParameterStoreStack
 from openttd.stack.common.tasks import TasksStack
@@ -53,6 +54,9 @@ prefix = f"{maturity.value}-Common-"
 
 DnsStack(app, f"{prefix}Dns",
     hosted_zone_name=hosted_zone_name,
+    env=env,
+)
+ExternalStack(app, f"{prefix}External",
     env=env,
 )
 TasksStack(app, f"{prefix}Tasks",
