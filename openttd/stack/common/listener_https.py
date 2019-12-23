@@ -45,6 +45,8 @@ class ListenerHttpsStack(Stack):
 
         Tag.add(self, "Stack", "Common-Listener-Https")
 
+        self._used_priorities = []
+
         self._alb = alb
         self._listener = ApplicationListener(self, "Listener-Https",
             load_balancer=alb,
@@ -102,6 +104,11 @@ class ListenerHttpsStack(Stack):
         self._listener.add_certificate_arns(cert.fqdn,
             arns=[cert.certificate_arn],
         )
+
+        # Prevent two services using the same priority
+        if priority in self._used_priorities:
+            raise Exception(f"Priority {priority} already used")
+        self._used_priorities.append(priority)
 
         self._listener.add_targets(cert.fqdn,
             deregistration_delay=Duration.seconds(30),
