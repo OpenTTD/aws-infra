@@ -18,7 +18,7 @@ g_external = None  # type: Optional[ExternalStack]
 
 class ExternalStack(Stack):
     """
-    Stack to create an external user with enough permissions to trigger
+    Stack to create an managed policy with enough permissions to trigger
     redeployments of containers.
 
     This is not fully trivial, as it needs enough permissions to for example
@@ -37,11 +37,7 @@ class ExternalStack(Stack):
 
         Tag.add(self, "Stack", "Common-External")
 
-        user = User(self, "User")
-
-        self._policy = ManagedPolicy(self, "Policy",
-            users=[user],
-        )
+        self._policy = ManagedPolicy(self, "Policy")
         # (de)registerTaskDefinitions doesn't support specific resources
         ecs_task = PolicyStatement(
             actions=[
