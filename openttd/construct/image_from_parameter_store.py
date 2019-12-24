@@ -5,7 +5,10 @@ from aws_cdk.core import (
 )
 from aws_cdk.aws_ssm import StringParameter
 
-from openttd.stack.common import parameter_store
+from openttd.stack.common import (
+    external,
+    parameter_store,
+)
 
 
 class ImageFromParameterStore(Construct):
@@ -17,8 +20,12 @@ class ImageFromParameterStore(Construct):
                  image_name: str) -> None:
         super().__init__(scope, id)
 
-        parameter = parameter_store.add_parameter(parameter_name, default="1")
-        tag = Token.as_string(StringParameter.value_for_string_parameter(self, parameter))
+        parameter = parameter_store.add_string(parameter_name, default="1")
+        # Make sure external processes can change this Parameter, to redeploy
+        # a new version of the container.
+        external.add_parameter(parameter.parameter)
+
+        tag = Token.as_string(StringParameter.value_for_string_parameter(self, parameter.name))
         self._image_ref = StringConcat().join(f"{image_name}:", tag)
 
     @property

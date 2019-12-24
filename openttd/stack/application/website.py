@@ -11,7 +11,7 @@ from openttd.stack.common import external
 
 
 class WebsiteStack(Stack):
-    application = "Website"
+    application_name = "Website"
 
     def __init__(self,
                  scope: Construct,
@@ -22,7 +22,7 @@ class WebsiteStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application)
+        Tag.add(self, "Application", self.application_name)
         Tag.add(self, "Deployment", deployment.value)
 
         external.add_stack(self)
@@ -34,9 +34,10 @@ class WebsiteStack(Stack):
             desired_count = 1
             priority = 110
 
-        ECSHTTPSContainer(self, self.application,
+        ECSHTTPSContainer(self, self.application_name,
             subdomain_name="www",
-            application_name=f"{deployment.value}-{self.application}",
+            deployment=deployment,
+            application_name=self.application_name,
             image_name="openttd/website",
             port=80,
             memory_limit_mib=128,

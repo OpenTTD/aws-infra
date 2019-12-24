@@ -10,9 +10,12 @@ from aws_cdk.aws_ecs import (
     PortMapping,
     PlacementStrategy,
     Protocol,
+    Secret,
 )
+from typing import Mapping
 
 from openttd.construct.image_from_parameter_store import ImageFromParameterStore
+from openttd.enumeration import Deployment
 from openttd.stack.common import (
     external,
     listener_https,
@@ -26,25 +29,30 @@ class ECSHTTPSContainer(Construct):
                  id: str,
                  *,
                  subdomain_name: str,
+                 deployment: Deployment,
                  application_name: str,
                  image_name: str,
                  port: int,
                  memory_limit_mib: int,
                  desired_count: int,
                  cluster: ICluster,
-                 priority: int) -> None:
+                 priority: int,
+                 environment: Mapping[str, str] = {},
+                 secrets: Mapping[str, Secret] = {}) -> None:
         super().__init__(scope, id)
 
-        log_group = tasks.add_logging(application_name)
-        task_role = tasks.add_role(application_name)
+        full_application_name = f"{deployment.value}-{application_name}"
+
+        log_group = tasks.add_logging(full_application_name)
+        task_role = tasks.add_role(full_application_name)
 
         logging = LogDrivers.aws_logs(
-            stream_prefix=application_name,
+            stream_prefix=full_application_name,
             log_group=log_group,
         )
 
         image = ImageFromParameterStore(self, "ImageName",
-            parameter_name=application_name,
+            parameter_name=f"/Version/{deployment.value}/{application_name}",
             image_name=image_name,
         )
 
@@ -57,8 +65,9 @@ class ECSHTTPSContainer(Construct):
         container = task_definition.add_container("Container",
             image=ContainerImage.from_registry(image.image_ref),
             memory_limit_mib=memory_limit_mib,
-#            readonly_root_filesystem=True,
             logging=logging,
+            environment=environment,
+            secrets=secrets,
         )
 
         container.add_port_mappings(PortMapping(

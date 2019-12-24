@@ -3,13 +3,21 @@ from aws_cdk.core import (
     Stack,
     Tag,
 )
-from aws_cdk.aws_ssm import StringParameter
+from aws_cdk.aws_ssm import (
+    ParameterType,
+    StringParameter,
+)
 from typing import Optional
 
 from openttd.enumeration import Maturity
-from openttd.stack.common import external
 
 g_parameter_store = None  # type: Optional[ParameterStoreStack]
+
+
+class ParameterResult:
+    def __init__(self, parameter, name):
+        self.parameter = parameter
+        self.name = name
 
 
 class ParameterStoreStack(Stack):
@@ -39,20 +47,43 @@ class ParameterStoreStack(Stack):
             raise Exception("Only a single ParameterStoreStack instance can exist")
         g_parameter_store = self
 
-    def add_parameter(self, name: str, default: str) -> str:
-        parameter_name = f"{self._maturity}-{name}"
+    def add_string(self, name: str, default: str) -> ParameterResult:
+        if not name.startswith("/"):
+            raise Exception("Please use a path for a parameter name")
+        parameter_name = f"/{self._maturity}{name}"
 
         parameter = StringParameter(self, parameter_name,
             string_value=default,
             parameter_name=parameter_name,
         )
-        external.add_parameter(parameter)
 
-        return parameter_name
+        return ParameterResult(parameter, parameter_name)
+
+    def add_secure_string(self, name: str) -> ParameterResult:
+        if not name.startswith("/"):
+            raise Exception("Please use a path for a parameter name")
+        parameter_name = f"/{self._maturity}{name}"
+
+        print(f"INFO: make sure SecureString '{parameter_name}' exists (CloudFormation currently can't create those)")
+        parameter = StringParameter.from_secure_string_parameter_attributes(self, parameter_name,
+            parameter_name=parameter_name,
+            # 'version' is just a dummny value, as in our usage we only care
+            # about the ASN (which is identical for every version).
+            version=1,
+        )
+
+        return ParameterResult(parameter, parameter_name)
 
 
-def add_parameter(name: str, default: str) -> str:
+def add_string(name: str, default: str) -> ParameterResult:
     if g_parameter_store is None:
         raise Exception("No ParameterStoreStack instance exists")
 
-    return g_parameter_store.add_parameter(name, default=default)
+    return g_parameter_store.add_string(name, default=default)
+
+
+def add_secure_string(name: str) -> ParameterResult:
+    if g_parameter_store is None:
+        raise Exception("No ParameterStoreStack instance exists")
+
+    return g_parameter_store.add_secure_string(name)
