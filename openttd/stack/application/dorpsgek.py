@@ -9,11 +9,9 @@ from aws_cdk.aws_ecs import (
 )
 
 from openttd.construct.ecs_https_container import ECSHTTPSContainer
+from openttd.construct.policy import Policy
 from openttd.enumeration import Deployment
-from openttd.stack.common import (
-    external,
-    parameter_store,
-)
+from openttd.stack.common import parameter_store
 
 
 class DorpsgekStack(Stack):
@@ -24,6 +22,7 @@ class DorpsgekStack(Stack):
                  id: str,
                  *,
                  deployment: Deployment,
+                 policy: Policy,
                  cluster: ICluster,
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -31,7 +30,7 @@ class DorpsgekStack(Stack):
         Tag.add(self, "Application", self.application_name)
         Tag.add(self, "Deployment", deployment.value)
 
-        external.add_stack(self)
+        policy.add_stack(self)
 
         if deployment == Deployment.PRODUCTION:
             desired_count = 1
@@ -49,6 +48,7 @@ class DorpsgekStack(Stack):
         ECSHTTPSContainer(self, self.application_name,
             subdomain_name="dorpsgek",
             deployment=deployment,
+            policy=policy,
             application_name=self.application_name,
             image_name="openttd/dorpsgek",
             port=80,

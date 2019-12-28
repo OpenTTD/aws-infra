@@ -20,9 +20,9 @@ from openttd.stack.common.alb import AlbStack
 from openttd.stack.common.certificate import CertificateStack
 from openttd.stack.common.dns import DnsStack
 from openttd.stack.common.ecs import EcsStack
-from openttd.stack.common.external import ExternalStack
 from openttd.stack.common.listener_https import ListenerHttpsStack
 from openttd.stack.common.parameter_store import ParameterStoreStack
+from openttd.stack.common.policy import PolicyStack
 from openttd.stack.common.tasks import TasksStack
 from openttd.stack.common.vpc import VpcStack
 
@@ -57,9 +57,6 @@ DnsStack(app, f"{prefix}Dns",
     hosted_zone_name=hosted_zone_name,
     env=env,
 )
-ExternalStack(app, f"{prefix}External",
-    env=env,
-)
 TasksStack(app, f"{prefix}Tasks",
     env=env,
 )
@@ -92,19 +89,27 @@ for deployment in Deployment:
     prefix = f"{maturity.value}-{deployment.value}-"
     dns.set_domain_name(domain_names[deployment])
 
+    website_policy = PolicyStack(app, f"{prefix}Website-Policy", env=env).policy
     WebsiteStack(app, f"{prefix}Website",
         deployment=deployment,
+        policy=website_policy,
         cluster=ecs.cluster,
         env=env,
     )
+    binaries_proxy_policy = PolicyStack(app, f"{prefix}BinariesProxy-Policy", env=env).policy
     BinariesProxyStack(app, f"{prefix}BinariesProxy",
         deployment=deployment,
+        policy=binaries_proxy_policy,
         cluster=ecs.cluster,
         env=env,
     )
 
+prefix = f"{maturity.value}-{Deployment.PRODUCTION.value}-"
+
+dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
 DorpsgekStack(app, f"{prefix}Dorpsgek",
     deployment=Deployment.PRODUCTION,
+    policy=dorpsgek_policy,
     cluster=ecs.cluster,
     env=env,
 )

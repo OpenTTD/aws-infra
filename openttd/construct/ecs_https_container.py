@@ -15,9 +15,9 @@ from aws_cdk.aws_ecs import (
 from typing import Mapping
 
 from openttd.construct.image_from_parameter_store import ImageFromParameterStore
+from openttd.construct.policy import Policy
 from openttd.enumeration import Deployment
 from openttd.stack.common import (
-    external,
     listener_https,
     tasks,
 )
@@ -30,6 +30,7 @@ class ECSHTTPSContainer(Construct):
                  *,
                  subdomain_name: str,
                  deployment: Deployment,
+                 policy: Policy,
                  application_name: str,
                  image_name: str,
                  port: int,
@@ -45,6 +46,7 @@ class ECSHTTPSContainer(Construct):
 
         log_group = tasks.add_logging(full_application_name)
         task_role = tasks.add_role(full_application_name)
+        policy.add_role(task_role)
 
         logging = LogDrivers.aws_logs(
             stream_prefix=full_application_name,
@@ -54,6 +56,7 @@ class ECSHTTPSContainer(Construct):
         image = ImageFromParameterStore(self, "ImageName",
             parameter_name=f"/Version/{deployment.value}/{application_name}",
             image_name=image_name,
+            policy=policy,
         )
 
         task_definition = Ec2TaskDefinition(self, "TaskDef",
@@ -80,7 +83,7 @@ class ECSHTTPSContainer(Construct):
             task_definition=task_definition,
             desired_count=desired_count,
         )
-        external.add_service(service)
+        policy.add_service(service)
 
         service.add_placement_strategies(
             PlacementStrategy.spread_across(BuiltInAttributes.AVAILABILITY_ZONE),

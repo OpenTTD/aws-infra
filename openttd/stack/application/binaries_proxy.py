@@ -6,8 +6,8 @@ from aws_cdk.core import (
 from aws_cdk.aws_ecs import ICluster
 
 from openttd.construct.ecs_https_container import ECSHTTPSContainer
+from openttd.construct.policy import Policy
 from openttd.enumeration import Deployment
-from openttd.stack.common import external
 
 
 class BinariesProxyStack(Stack):
@@ -18,6 +18,7 @@ class BinariesProxyStack(Stack):
                  id: str,
                  *,
                  deployment: Deployment,
+                 policy: Policy,
                  cluster: ICluster,
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -25,7 +26,7 @@ class BinariesProxyStack(Stack):
         Tag.add(self, "Application", self.application_name)
         Tag.add(self, "Deployment", deployment.value)
 
-        external.add_stack(self)
+        policy.add_stack(self)
 
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
@@ -37,6 +38,7 @@ class BinariesProxyStack(Stack):
         ECSHTTPSContainer(self, self.application_name,
             subdomain_name="proxy.binaries",
             deployment=deployment,
+            policy=policy,
             application_name=self.application_name,
             image_name="openttd/binaries-proxy",
             port=80,
