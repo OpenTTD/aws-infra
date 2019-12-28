@@ -19,13 +19,13 @@ class ImageFromParameterStore(Construct):
                  policy: Policy) -> None:
         super().__init__(scope, id)
 
-        parameter = parameter_store.add_string(parameter_name, default="1")
+        parameter = parameter_store.add_string(parameter_name, default=":1")
         # Make sure external processes can change this Parameter, to redeploy
         # a new version of the container.
         policy.add_parameter(parameter.parameter)
 
         tag = Token.as_string(StringParameter.value_for_string_parameter(self, parameter.name))
-        self._image_ref = StringConcat().join(f"{image_name}:", tag)
+        self._image_ref = StringConcat().join(image_name, tag)
 
     @property
     def image_ref(self):
