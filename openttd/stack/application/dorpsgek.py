@@ -56,6 +56,9 @@ class DorpsgekStack(Stack):
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
+            environment={
+                "DORPSGEK_SENTRY_ENVIRONMENT": deployment.lower(),
+            },
             secrets={
                 "DORPSGEK_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
                 "DORPSGEK_GITHUB_APP_ID": Secret.from_ssm_parameter(github_app_id),
