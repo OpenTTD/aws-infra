@@ -1,19 +1,14 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
 )
 from aws_cdk.aws_ecs import IService
 from aws_cdk.aws_iam import (
     ManagedPolicy,
     PolicyStatement,
     IRole,
-    User,
 )
 from aws_cdk.aws_ssm import IParameter
-from typing import Optional
-
-g_external = None  # type: Optional[ExternalStack]
 
 
 class Policy(Construct):

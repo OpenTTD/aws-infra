@@ -3,10 +3,7 @@ from aws_cdk.core import (
     Stack,
     Tag,
 )
-from aws_cdk.aws_ssm import (
-    ParameterType,
-    StringParameter,
-)
+from aws_cdk.aws_ssm import StringParameter
 from typing import Optional
 
 from openttd.enumeration import Maturity

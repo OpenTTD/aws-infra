@@ -65,4 +65,4 @@ class DorpsgekStack(Stack):
                 "DORPSGEK_GITHUB_APP_PRIVATE_KEY": Secret.from_ssm_parameter(github_app_private_key),
                 "DORPSGEK_GITHUB_APP_SECRET": Secret.from_ssm_parameter(github_app_secret),
             },
-            )
+        )

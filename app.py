@@ -26,7 +26,7 @@ from openttd.stack.common.policy import PolicyStack
 from openttd.stack.common.tasks import TasksStack
 from openttd.stack.common.vpc import VpcStack
 
-### Begin of onfiguration
+### Begin of configuration
 
 maturity = Maturity.DEVELOPMENT
 env = {
