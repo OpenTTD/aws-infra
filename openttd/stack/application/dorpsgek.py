@@ -57,7 +57,7 @@ class DorpsgekStack(Stack):
             cluster=cluster,
             priority=priority,
             environment={
-                "DORPSGEK_SENTRY_ENVIRONMENT": deployment.lower(),
+                "DORPSGEK_SENTRY_ENVIRONMENT": deployment.value.lower(),
             },
             secrets={
                 "DORPSGEK_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
