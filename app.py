@@ -13,6 +13,7 @@ from openttd.enumeration import (
     Maturity,
 )
 from openttd.stack.application.binaries_proxy import BinariesProxyStack
+from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.common import dns
@@ -111,6 +112,11 @@ DorpsgekStack(app, f"{prefix}Dorpsgek",
     deployment=Deployment.PRODUCTION,
     policy=dorpsgek_policy,
     cluster=ecs.cluster,
+    env=env,
+)
+
+DocsStack(app, f"{prefix}Docs",
+    deployment=Deployment.PRODUCTION,
     env=env,
 )
 
