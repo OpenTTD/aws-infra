@@ -58,7 +58,10 @@ class DocsStack(Stack):
 
         distribution = CloudFrontWebDistribution(self, "CloudFront",
             origin_configs=[SourceConfiguration(
-                s3_origin_source=S3OriginConfig(s3_bucket_source=bucket),
+                s3_origin_source=S3OriginConfig(
+                    s3_bucket_source=bucket,
+                    origin_access_identity=oai,
+                ),
                 origin_path="/live",
                 behaviors=[Behavior(is_default_behavior=True)]
             )],
