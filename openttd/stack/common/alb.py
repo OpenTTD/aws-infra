@@ -33,7 +33,7 @@ class AlbStack(Stack):
         )
 
         logs_bucket = Bucket(self, "AccessLogs",
-           encryption=BucketEncryption.KMS_MANAGED,
+           encryption=BucketEncryption.S3_MANAGED,
            block_public_access=BlockPublicAccess.BLOCK_ALL,
         )
         self._alb.log_access_logs(logs_bucket)

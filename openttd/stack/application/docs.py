@@ -50,7 +50,7 @@ class DocsStack(Stack):
         )
         bucket.grant_read(oai)
         logs_bucket = Bucket(self, "AccessLogs",
-           encryption=BucketEncryption.KMS_MANAGED,
+           encryption=BucketEncryption.S3_MANAGED,
            block_public_access=BlockPublicAccess.BLOCK_ALL,
         )
 
