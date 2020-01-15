@@ -5,6 +5,7 @@ from aws_cdk.core import (
 )
 from aws_cdk.aws_cloudfront import (
     Behavior,
+    CfnDistribution,
     CloudFrontWebDistribution,
     LoggingConfiguration,
     OriginAccessIdentity,
@@ -62,10 +63,16 @@ class DocsStack(Stack):
                     s3_bucket_source=bucket,
                     origin_access_identity=oai,
                 ),
-                origin_path="/live",
                 behaviors=[Behavior(is_default_behavior=True)]
             )],
             enable_ip_v6=True,
+            error_configurations=[
+                CfnDistribution.CustomErrorResponseProperty(
+                    error_code=404,
+                    response_code=404,
+                    response_page_path="/errors/404.html",
+                ),
+            ],
             price_class=PriceClass.PRICE_CLASS_100,
             logging_config=LoggingConfiguration(
                 bucket=logs_bucket,
