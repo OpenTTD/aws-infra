@@ -1,6 +1,9 @@
 from aws_cdk.core import (
+    Arn,
+    ArnComponents,
     Construct,
     Stack,
+    StringConcat,
     Tag,
 )
 from aws_cdk.aws_cloudfront import (
@@ -13,6 +16,10 @@ from aws_cdk.aws_cloudfront import (
     SourceConfiguration,
     S3OriginConfig,
     ViewerCertificate,
+)
+from aws_cdk.aws_iam import (
+    ManagedPolicy,
+    PolicyStatement,
 )
 from aws_cdk.aws_route53_targets import CloudFrontTarget
 from aws_cdk.aws_s3 import (
@@ -91,3 +98,30 @@ class DocsStack(Stack):
             fqdn=cert.fqdn,
             target=CloudFrontTarget(distribution),
         )
+
+        policy = ManagedPolicy(self, "Policy")
+        policy.add_statements(PolicyStatement(
+            actions=[
+                "s3:DeleteObject",
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+            ],
+            resources=[
+                bucket.bucket_arn,
+                StringConcat().join(bucket.bucket_arn, "/*")
+            ],
+        ))
+        policy.add_statements(PolicyStatement(
+            actions=[
+                "cloudfront:CreateInvalidation",
+            ],
+            resources=[
+                Arn.format(ArnComponents(
+                    resource="distribution",
+                    service="cloudfront",
+                    region="",
+                    resource_name=distribution.distribution_id,
+                ), self),
+            ],
+        ))
