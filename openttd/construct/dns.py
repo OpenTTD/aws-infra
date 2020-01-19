@@ -1,9 +1,6 @@
 from aws_cdk.core import Construct
 import aws_cdk.aws_route53 as route53
-from aws_cdk.aws_route53 import (
-    AddressRecordTarget,
-    RecordTarget,
-)
+from aws_cdk.aws_route53 import RecordTarget
 
 from openttd.stack.common import dns
 
@@ -44,7 +41,7 @@ class AaaaRecord(Construct):
         record_name = fqdn[0:-len(hosted_zone_name) - 1]
 
         route53.AaaaRecord(self, id,
-            target=AddressRecordTarget(alias_target=target),
+            target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
             record_name=record_name,
         )
