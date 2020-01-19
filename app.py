@@ -15,6 +15,7 @@ from openttd.enumeration import (
 from openttd.stack.application.binaries_proxy import BinariesProxyStack
 from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
+from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.common import dns
 from openttd.stack.common.alb import AlbStack
@@ -113,19 +114,23 @@ for deployment in Deployment:
         env=env,
     )
 
-prefix = f"{maturity.value}-{Deployment.PRODUCTION.value}-"
+    if deployment == Deployment.PRODUCTION:
+        dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
+        DorpsgekStack(app, f"{prefix}Dorpsgek",
+            deployment=deployment,
+            policy=dorpsgek_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
 
-dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
-DorpsgekStack(app, f"{prefix}Dorpsgek",
-    deployment=Deployment.PRODUCTION,
-    policy=dorpsgek_policy,
-    cluster=ecs.cluster,
-    env=env,
-)
+        DocsStack(app, f"{prefix}Docs",
+            deployment=deployment,
+            env=env,
+        )
 
-DocsStack(app, f"{prefix}Docs",
-    deployment=Deployment.PRODUCTION,
-    env=env,
-)
+        RedirectStack(app, f"{prefix}Redirect",
+            deployment=deployment,
+            env=env,
+        )
 
 app.synth()
