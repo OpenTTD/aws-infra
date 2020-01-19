@@ -15,8 +15,8 @@ setuptools.setup(
 
     author="TrueBrain",
 
-    package_dir={"": "infrastructure"},
-    packages=setuptools.find_packages(where="infrastructure"),
+    package_dir={"": "openttd"},
+    packages=setuptools.find_packages(where="openttd"),
 
     install_requires=[
         "aws-cdk.aws-certificatemanager",
