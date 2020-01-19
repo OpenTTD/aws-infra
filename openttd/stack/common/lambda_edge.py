@@ -79,6 +79,16 @@ class LambdaEdgeStack(Stack):
 
         Tag.add(self, "Stack", "Common-Lambda-Edge")
 
+        self._role = Role(self, "EdgeLambdaRole",
+            assumed_by=CompositePrincipal(
+                ServicePrincipal("lambda.amazonaws.com"),
+                ServicePrincipal("edgelambda.amazonaws.com"),
+            ),
+            managed_policies=[
+                ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole"),
+            ],
+        )
+
         if g_lambda_edge is not None:
             raise Exception("Only a single LambdaEdgeStack instance can exist")
         g_lambda_edge = self
@@ -90,21 +100,11 @@ class LambdaEdgeStack(Stack):
                         code: AssetCode,
                         handler: str,
                         runtime: Runtime) -> LambdaEdgeFunction:
-        role = Role(self, "EdgeLambdaRole",
-            assumed_by=CompositePrincipal(
-                ServicePrincipal("lambda.amazonaws.com"),
-                ServicePrincipal("edgelambda.amazonaws.com"),
-            ),
-            managed_policies=[
-                ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole"),
-            ],
-        )
-
         func = Function(self, id,
             code=code,
             handler=handler,
             runtime=runtime,
-            role=role,
+            role=self._role,
         )
 
         # If code/runtime changes, CDK doesn't re-evaluate the version. In
