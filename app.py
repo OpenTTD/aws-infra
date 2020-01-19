@@ -21,6 +21,7 @@ from openttd.stack.common.alb import AlbStack
 from openttd.stack.common.certificate import CertificateStack
 from openttd.stack.common.dns import DnsStack
 from openttd.stack.common.ecs import EcsStack
+from openttd.stack.common.lambda_edge import LambdaEdgeStack
 from openttd.stack.common.listener_https import ListenerHttpsStack
 from openttd.stack.common.parameter_store import ParameterStoreStack
 from openttd.stack.common.policy import PolicyStack
@@ -53,6 +54,13 @@ app = App()
 Tag.add(app, "Maturity", maturity.value)
 
 prefix = f"{maturity.value}-Common-"
+
+LambdaEdgeStack(app, f"{prefix}LambdaEdge",
+    env={
+        "region": "us-east-1",
+        "account": env["account"],
+    },
+)
 
 DnsStack(app, f"{prefix}Dns",
     hosted_zone_name=hosted_zone_name,

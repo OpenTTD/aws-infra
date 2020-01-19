@@ -27,6 +27,7 @@ setuptools.setup(
         "aws-cdk.aws-s3",
         "aws-cdk.aws-ssm",
         "aws-cdk.core",
+        "aws-cdk.custom-resources",
     ],
 
     python_requires=">=3.6",

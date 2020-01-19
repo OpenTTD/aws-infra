@@ -10,6 +10,8 @@ from aws_cdk.aws_cloudfront import (
     Behavior,
     CfnDistribution,
     CloudFrontWebDistribution,
+    LambdaEdgeEventType,
+    LambdaFunctionAssociation,
     LoggingConfiguration,
     OriginAccessIdentity,
     PriceClass,
@@ -20,6 +22,10 @@ from aws_cdk.aws_cloudfront import (
 from aws_cdk.aws_iam import (
     ManagedPolicy,
     PolicyStatement,
+)
+from aws_cdk.aws_lambda import (
+    Code,
+    Runtime,
 )
 from aws_cdk.aws_route53_targets import CloudFrontTarget
 from aws_cdk.aws_s3 import (
@@ -34,6 +40,7 @@ from openttd.construct.dns import (
 )
 from openttd.enumeration import Deployment
 from openttd.stack.common import certificate
+from openttd.stack.common import lambda_edge
 
 
 class DocsStack(Stack):
@@ -64,13 +71,29 @@ class DocsStack(Stack):
 
         cert = certificate.add_certificate(self.subdomain_name, region="us-east-1")
 
+        func = lambda_edge.create_function(self, "DocsIndexRedirect",
+            runtime=Runtime.NODEJS_10_X,
+            handler="index.handler",
+            code=Code.from_asset("./lambdas/index-redirect"),
+        )
+
         distribution = CloudFrontWebDistribution(self, "CloudFront",
             origin_configs=[SourceConfiguration(
                 s3_origin_source=S3OriginConfig(
                     s3_bucket_source=bucket,
                     origin_access_identity=oai,
                 ),
-                behaviors=[Behavior(is_default_behavior=True)]
+                behaviors=[
+                    Behavior(
+                        is_default_behavior=True,
+                        lambda_function_associations=[
+                            LambdaFunctionAssociation(
+                                event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                                lambda_function=func,
+                            ),
+                        ],
+                    )
+                ]
             )],
             enable_ip_v6=True,
             error_configurations=[
@@ -87,7 +110,7 @@ class DocsStack(Stack):
             viewer_certificate=ViewerCertificate.from_acm_certificate(
                 certificate=cert.certificate,
                 aliases=[cert.fqdn],
-            )
+            ),
         )
 
         ARecord(self, f"{cert.fqdn}-ARecord",

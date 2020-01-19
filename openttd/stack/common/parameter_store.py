@@ -44,10 +44,13 @@ class ParameterStoreStack(Stack):
             raise Exception("Only a single ParameterStoreStack instance can exist")
         g_parameter_store = self
 
+    def get_parameter_name(self, name: str) -> str:
+        return f"/{self._maturity}{name}"
+
     def add_string(self, name: str, default: str) -> ParameterResult:
         if not name.startswith("/"):
             raise Exception("Please use a path for a parameter name")
-        parameter_name = f"/{self._maturity}{name}"
+        parameter_name = self.get_parameter_name(name)
 
         parameter = StringParameter(self, parameter_name,
             string_value=default,
@@ -59,7 +62,7 @@ class ParameterStoreStack(Stack):
     def add_secure_string(self, name: str) -> ParameterResult:
         if not name.startswith("/"):
             raise Exception("Please use a path for a parameter name")
-        parameter_name = f"/{self._maturity}{name}"
+        parameter_name = self.get_parameter_name(name)
 
         print(f"INFO: make sure SecureString '{parameter_name}' exists (CloudFormation currently can't create those)")
         parameter = StringParameter.from_secure_string_parameter_attributes(self, parameter_name,
@@ -84,3 +87,10 @@ def add_secure_string(name: str) -> ParameterResult:
         raise Exception("No ParameterStoreStack instance exists")
 
     return g_parameter_store.add_secure_string(name)
+
+
+def get_parameter_name(name: str) -> str:
+    if g_parameter_store is None:
+        raise Exception("No ParameterStoreStack instance exists")
+
+    return g_parameter_store.get_parameter_name(name)
