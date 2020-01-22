@@ -95,3 +95,8 @@ class ECSHTTPSContainer(Construct):
             service=service,
             priority=priority,
         )
+
+        # Remove the security group from this stack, and add it to the ALB stack
+        service.node.try_remove_child("SecurityGroup1")
+        for security_group in cluster.connections.security_groups:
+            service.connections.add_security_group(security_group)
