@@ -13,6 +13,7 @@ from openttd.enumeration import (
     Maturity,
 )
 from openttd.stack.application.binaries_proxy import BinariesProxyStack
+from openttd.stack.application.cdn import CdnStack
 from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
 from openttd.stack.application.redirect import RedirectStack
@@ -120,6 +121,11 @@ for deployment in Deployment:
             deployment=deployment,
             policy=dorpsgek_policy,
             cluster=ecs.cluster,
+            env=env,
+        )
+
+        CdnStack(app, f"{prefix}Cdn",
+            deployment=deployment,
             env=env,
         )
 
