@@ -7,7 +7,10 @@ from aws_cdk.aws_certificatemanager import (
     DnsValidatedCertificate,
     ValidationMethod,
 )
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from openttd.stack.common import dns
 
@@ -47,12 +50,16 @@ class CertificateStack(Stack):
             raise Exception("Only a single CertificateStack instance can exist")
         g_certificate = self
 
-    def add_certificate(self, subdomain_name: str, region: Optional[str] = None) -> CertificateResult:
+    def add_certificate(self,
+                        subdomain_name: str,
+                        region: Optional[str] = None,
+                        additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
         certificate = DnsValidatedCertificate(self, f"{fqdn}-Certificate",
             hosted_zone=dns.get_hosted_zone(),
             domain_name=fqdn,
+            subject_alternative_names=additional_fqdns,
             region=region,
             validation_domains={
                 fqdn: dns.get_domain_name(),
@@ -72,8 +79,10 @@ class CertificateStack(Stack):
         return CertificateResult(certificate, certificate.certificate_arn, fqdn)
 
 
-def add_certificate(subdomain_name: str, region: Optional[str] = None) -> CertificateResult:
+def add_certificate(subdomain_name: str,
+                    region: Optional[str] = None,
+                    additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
     if g_certificate is None:
         raise Exception("No CertificateStack instance exists")
 
-    return g_certificate.add_certificate(subdomain_name, region=region)
+    return g_certificate.add_certificate(subdomain_name, region=region, additional_fqdns=additional_fqdns)

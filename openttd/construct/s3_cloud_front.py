@@ -44,6 +44,7 @@ class S3CloudFront(Construct):
                  id: str,
                  *,
                  subdomain_name: str,
+                 additional_fqdns: Optional[List[str]] = None,
                  error_folder: Optional[str] = None,
                  lambda_function_associations: Optional[List[LambdaFunctionAssociation]] = None,
                  bucket_site: Optional[Bucket] = None,
@@ -51,6 +52,9 @@ class S3CloudFront(Construct):
                  ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
+
+        if additional_fqdns is None:
+            additional_fqdns = []
 
         # We restrict access to the S3 as much as possible; in result, we need
         # an OAI, so CloudFront can connect to it.
@@ -71,7 +75,7 @@ class S3CloudFront(Construct):
             )
 
         # CloudFront needs everything to be available in us-east-1
-        cert = certificate.add_certificate(subdomain_name, region="us-east-1")
+        cert = certificate.add_certificate(subdomain_name, region="us-east-1", additional_fqdns=additional_fqdns)
 
         error_configurations = None
         if error_folder:
@@ -106,7 +110,7 @@ class S3CloudFront(Construct):
             ),
             viewer_certificate=ViewerCertificate.from_acm_certificate(
                 certificate=cert.certificate,
-                aliases=[cert.fqdn],
+                aliases=[cert.fqdn] + additional_fqdns,
             ),
         )
 

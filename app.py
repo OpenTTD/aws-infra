@@ -124,8 +124,20 @@ for deployment in Deployment:
             env=env,
         )
 
+        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
+        # connections between CloudFlare and CloudFront, we provision the
+        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
+        if maturity == Maturity.PRODUCTION:
+            additional_fqdns = [
+                "www.openttd-cdn.org",
+                "openttd-cdn.org",
+            ]
+        else:
+            additional_fqdns = None
+
         CdnStack(app, f"{prefix}Cdn",
             deployment=deployment,
+            additional_fqdns=additional_fqdns,
             env=env,
         )
 

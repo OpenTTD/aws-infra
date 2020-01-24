@@ -11,6 +11,10 @@ from aws_cdk.aws_lambda import (
     Code,
     Runtime,
 )
+from typing import (
+    List,
+    Optional,
+)
 
 from openttd.construct.s3_cloud_front import (
     S3CloudFront,
@@ -29,6 +33,7 @@ class CdnStack(Stack):
                  id: str,
                  *,
                  deployment: Deployment,
+                 additional_fqdns: Optional[List[str]] = None,
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -48,6 +53,7 @@ class CdnStack(Stack):
                 event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
                 lambda_function=func,
             ),
+            additional_fqdns=additional_fqdns,
         )
 
         S3CloudFrontPolicy(self, "S3cloudFrontPolicy",
