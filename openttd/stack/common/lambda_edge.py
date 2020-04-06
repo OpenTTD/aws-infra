@@ -8,7 +8,9 @@ from aws_cdk.core import (
 )
 from aws_cdk.custom_resources import (
     AwsCustomResource,
+    AwsCustomResourcePolicy,
     AwsSdkCall,
+    PhysicalResourceId,
 )
 from aws_cdk.aws_iam import (
     CompositePrincipal,
@@ -51,11 +53,11 @@ class LambdaEdgeFunction(AwsCustomResource):
                 "Name": parameter_name,
             },
             region="us-east-1",
-            physical_resource_id=f"LEF-{id}",
+            physical_resource_id=PhysicalResourceId.of(f"LEF-{id}"),
         )
 
     def get_arn(self):
-        return self.get_data_string("Parameter.Value")
+        return self.get_response_field("Parameter.Value")
 
 
 class LambdaEdgeStack(Stack):
@@ -130,6 +132,7 @@ class LambdaEdgeStack(Stack):
         # Create a custom resource that fetches the arn of the lambda
         cross_region_func = LambdaEdgeFunction(other_stack, f"LambdaEdgeFunction-{sha256}",
             parameter_name=parameter_name,
+            policy=AwsCustomResourcePolicy.from_sdk_calls(resources=AwsCustomResourcePolicy.ANY_RESOURCE),
         )
         # Create the lambda function based on this arn
         return Function.from_function_arn(other_stack, id, cross_region_func.get_arn())
