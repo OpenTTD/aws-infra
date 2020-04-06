@@ -49,6 +49,7 @@ class S3CloudFront(Construct):
                  lambda_function_associations: Optional[List[LambdaFunctionAssociation]] = None,
                  bucket_site: Optional[Bucket] = None,
                  bucket_access_logs: Optional[Bucket] = None,
+                 price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
                  ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
@@ -104,7 +105,7 @@ class S3CloudFront(Construct):
             )],
             enable_ip_v6=True,
             error_configurations=error_configurations,
-            price_class=PriceClass.PRICE_CLASS_100,
+            price_class=price_class,
             logging_config=LoggingConfiguration(
                 bucket=bucket_access_logs,
             ),
@@ -130,17 +131,23 @@ class S3CloudFrontPolicy(Construct):
                  id: str,
                  *,
                  s3_cloud_front: S3CloudFront,
+                 with_s3_get_object_access: bool = False,
                  ) -> None:
         super().__init__(scope, id)
 
+        actions = [
+            "s3:DeleteObject",
+            "s3:ListBucket",
+            "s3:PutObject",
+            "s3:PutObjectAcl",
+        ]
+
+        if with_s3_get_object_access:
+            actions.append("s3:GetObject")
+
         policy = ManagedPolicy(self, "Policy")
         policy.add_statements(PolicyStatement(
-            actions=[
-                "s3:DeleteObject",
-                "s3:ListBucket",
-                "s3:PutObject",
-                "s3:PutObjectAcl",
-            ],
+            actions=actions,
             resources=[
                 s3_cloud_front.bucket_site.bucket_arn,
                 StringConcat().join(s3_cloud_front.bucket_site.bucket_arn, "/*")

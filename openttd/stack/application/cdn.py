@@ -6,6 +6,7 @@ from aws_cdk.core import (
 from aws_cdk.aws_cloudfront import (
     LambdaEdgeEventType,
     LambdaFunctionAssociation,
+    PriceClass,
 )
 from aws_cdk.aws_lambda import (
     Code,
@@ -54,8 +55,10 @@ class CdnStack(Stack):
                 lambda_function=func,
             ),
             additional_fqdns=additional_fqdns,
+            price_class=PriceClass.PRICE_CLASS_ALL,
         )
 
         S3CloudFrontPolicy(self, "S3cloudFrontPolicy",
             s3_cloud_front=s3_cloud_front,
+            with_s3_get_object_access=True,
         )
