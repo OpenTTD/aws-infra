@@ -19,7 +19,10 @@ from openttd.construct.dns import (
     ARecord,
     AaaaRecord,
 )
-from openttd.stack.common import certificate
+from openttd.stack.common import (
+    certificate,
+    dns,
+)
 
 g_listener_https = None  # type: Optional[ListenerHttpsStack]
 
@@ -46,6 +49,7 @@ class ListenerHttpsStack(Stack):
         Tag.add(self, "Stack", "Common-Listener-Https")
 
         self._used_priorities = []
+        self._subdomains_cert = {}
 
         self._alb = alb
         self._listener = ApplicationListener(self, "Listener-Https",
@@ -97,46 +101,63 @@ class ListenerHttpsStack(Stack):
     def add_targets(self,
                     subdomain_name: str,
                     port: int,
-                    service: IApplicationLoadBalancerTarget,
-                    priority: int) -> None:
-        cert = certificate.add_certificate(subdomain_name)
+                    target: IApplicationLoadBalancerTarget,
+                    priority: int,
+                    *,
+                    path_pattern: Optional[str] = None) -> None:
+        fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
-        self._listener.add_certificate_arns(cert.fqdn,
-            arns=[cert.certificate_arn],
-        )
+        cert = self._subdomains_cert.get(fqdn)
+        if not cert:
+            cert = certificate.add_certificate(subdomain_name)
+
+            self._listener.add_certificate_arns(fqdn,
+                arns=[cert.certificate_arn],
+            )
 
         # Prevent two services using the same priority
         if priority in self._used_priorities:
             raise Exception(f"Priority {priority} already used")
         self._used_priorities.append(priority)
 
-        self._listener.add_targets(cert.fqdn,
+        if path_pattern:
+            id = f"{fqdn}-{path_pattern}"
+        else:
+            id = fqdn
+
+        self._listener.add_targets(id,
             deregistration_delay=Duration.seconds(30),
             slow_start=Duration.seconds(30),
             stickiness_cookie_duration=Duration.minutes(5),
             health_check=self._get_health_check(),
             port=port,
             protocol=ApplicationProtocol.HTTP,
-            targets=[service],
-            host_header=cert.fqdn,
+            targets=[target],
+            host_header=fqdn,
+            path_pattern=path_pattern,
             priority=priority,
         )
 
-        ARecord(self, f"{cert.fqdn}-ARecord",
-            fqdn=cert.fqdn,
-            target=LoadBalancerTarget(self._alb),
-        )
-        AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
-            fqdn=cert.fqdn,
-            target=LoadBalancerTarget(self._alb),
-        )
+        if fqdn not in self._subdomains_cert:
+            ARecord(self, f"{cert.fqdn}-ARecord",
+                fqdn=cert.fqdn,
+                target=LoadBalancerTarget(self._alb),
+            )
+            AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
+                fqdn=cert.fqdn,
+                target=LoadBalancerTarget(self._alb),
+            )
+
+            self._subdomains_cert[fqdn] = cert
 
 
 def add_targets(subdomain_name: str,
                 port: int,
-                service: IApplicationLoadBalancerTarget,
-                priority: int) -> None:
+                target: IApplicationLoadBalancerTarget,
+                priority: int,
+                *,
+                path_pattern: Optional[str] = None) -> None:
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(subdomain_name, port, service, priority)
+    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern)

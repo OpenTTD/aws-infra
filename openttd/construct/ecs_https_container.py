@@ -12,7 +12,11 @@ from aws_cdk.aws_ecs import (
     Protocol,
     Secret,
 )
-from typing import Mapping
+from typing import (
+    List,
+    Mapping,
+    Optional,
+)
 
 from openttd.construct.image_from_parameter_store import ImageFromParameterStore
 from openttd.construct.policy import Policy
@@ -38,6 +42,8 @@ class ECSHTTPSContainer(Construct):
                  desired_count: int,
                  cluster: ICluster,
                  priority: int,
+                 path_pattern: Optional[str] = None,
+                 command: Optional[List[str]] = None,
                  environment: Mapping[str, str] = {},
                  secrets: Mapping[str, Secret] = {}) -> None:
         super().__init__(scope, id)
@@ -45,8 +51,8 @@ class ECSHTTPSContainer(Construct):
         full_application_name = f"{deployment.value}-{application_name}"
 
         log_group = tasks.add_logging(full_application_name)
-        task_role = tasks.add_role(full_application_name)
-        policy.add_role(task_role)
+        self.task_role = tasks.add_role(full_application_name)
+        policy.add_role(self.task_role)
 
         logging = LogDrivers.aws_logs(
             stream_prefix=full_application_name,
@@ -61,42 +67,63 @@ class ECSHTTPSContainer(Construct):
 
         task_definition = Ec2TaskDefinition(self, "TaskDef",
             network_mode=NetworkMode.BRIDGE,
-            execution_role=task_role,
-            task_role=task_role,
+            execution_role=self.task_role,
+            task_role=self.task_role,
         )
 
-        container = task_definition.add_container("Container",
+        self.container = task_definition.add_container("Container",
             image=ContainerImage.from_registry(image.image_ref),
             memory_limit_mib=memory_limit_mib,
             logging=logging,
             environment=environment,
             secrets=secrets,
+            command=command,
         )
 
-        container.add_port_mappings(PortMapping(
-            container_port=port,
-            protocol=Protocol.TCP,
-        ))
+        self.add_port(
+            port=port,
+        )
 
-        service = Ec2Service(self, "Service",
+        self.service = Ec2Service(self, "Service",
             cluster=cluster,
             task_definition=task_definition,
             desired_count=desired_count,
         )
-        policy.add_service(service)
+        policy.add_service(self.service)
 
-        service.add_placement_strategies(
+        self.service.add_placement_strategies(
             PlacementStrategy.spread_across(BuiltInAttributes.AVAILABILITY_ZONE),
         )
 
-        listener_https.add_targets(
+        self.add_target(
             subdomain_name=subdomain_name,
             port=port,
-            service=service,
             priority=priority,
+            path_pattern=path_pattern,
         )
 
         # Remove the security group from this stack, and add it to the ALB stack
-        service.node.try_remove_child("SecurityGroup1")
+        self.service.node.try_remove_child("SecurityGroup1")
         for security_group in cluster.connections.security_groups:
-            service.connections.add_security_group(security_group)
+            self.service.connections.add_security_group(security_group)
+
+    def add_port(self,
+                 port: int):
+        self.container.add_port_mappings(PortMapping(
+            container_port=port,
+            protocol=Protocol.TCP,
+        ))
+
+    def add_target(self,
+                   subdomain_name: str,
+                   port: int,
+                   priority: int,
+                   *,
+                   path_pattern: Optional[str] = None):
+        listener_https.add_targets(
+            subdomain_name=subdomain_name,
+            port=port,
+            target=self.service.load_balancer_target(container_name="Container", container_port=port),
+            priority=priority,
+            path_pattern=path_pattern,
+        )

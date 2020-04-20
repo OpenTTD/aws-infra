@@ -28,6 +28,7 @@ setuptools.setup(
         "aws-cdk.aws-ssm",
         "aws-cdk.core",
         "aws-cdk.custom-resources",
+        "boto3",
     ],
 
     python_requires=">=3.6",

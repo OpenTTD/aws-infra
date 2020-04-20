@@ -13,9 +13,17 @@ from openttd.enumeration import (
     Maturity,
 )
 from openttd.stack.application.binaries_proxy import BinariesProxyStack
+from openttd.stack.application.binaries_redirect import BinariesRedirectStack
 from openttd.stack.application.cdn import CdnStack
+from openttd.stack.application.bananas import (
+    BananasApiStack,
+    BananasCdnStack,
+    BananasFrontendWebStack,
+    BananasServerStack,
+)
 from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
+from openttd.stack.application.installer import InstallerStack
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.common import dns
@@ -115,6 +123,55 @@ for deployment in Deployment:
         env=env,
     )
 
+    # TODO -- For now we only deploy on staging
+    if deployment == Deployment.STAGING:
+        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
+        # connections between CloudFlare and CloudFront, we provision the
+        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
+        if deployment == Deployment.PRODUCTION and maturity == Maturity.PRODUCTION:
+            additional_fqdns = [
+                "bananas.openttd-cdn.org",
+            ]
+        else:
+            additional_fqdns = None
+
+        bananas_cdn = BananasCdnStack(app, f"{prefix}BananasCdn",
+            deployment=deployment,
+            additional_fqdns=additional_fqdns,
+            env=env,
+        )
+        bananas_api_policy = PolicyStack(app, f"{prefix}BananasApi-Policy", env=env).policy
+        BananasApiStack(app, f"{prefix}BananasApi",
+            deployment=deployment,
+            policy=bananas_api_policy,
+            cluster=ecs.cluster,
+            bucket=bananas_cdn.bucket,
+            env=env,
+        )
+        bananas_server_policy = PolicyStack(app, f"{prefix}BananasServer-Policy", env=env).policy
+        BananasServerStack(app, f"{prefix}BananasServer",
+            deployment=deployment,
+            policy=bananas_server_policy,
+            cluster=ecs.cluster,
+            bucket=bananas_cdn.bucket,
+            env=env,
+        )
+        bananas_frontend_web_policy = PolicyStack(app, f"{prefix}BananasFrontendWeb-Policy", env=env).policy
+        BananasFrontendWebStack(app, f"{prefix}BananasFrontendWeb",
+            deployment=deployment,
+            policy=bananas_frontend_web_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
+
+        binaries_redirect_policy = PolicyStack(app, f"{prefix}BinariesRedirect-Policy", env=env).policy
+        BinariesRedirectStack(app, f"{prefix}BinariesRedirect",
+            deployment=deployment,
+            policy=binaries_redirect_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
+
     if deployment == Deployment.PRODUCTION:
         dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
         DorpsgekStack(app, f"{prefix}Dorpsgek",
@@ -140,6 +197,12 @@ for deployment in Deployment:
             additional_fqdns=additional_fqdns,
             env=env,
         )
+
+        # TODO -- Temporary disabled till we go to production
+        # InstallerStack(app, f"{prefix}Installer",
+        #     deployment=deployment,
+        #     env=env,
+        # )
 
         DocsStack(app, f"{prefix}Docs",
             deployment=deployment,

@@ -1,3 +1,5 @@
+import boto3
+
 from aws_cdk.core import (
     Construct,
     Stack,
@@ -9,6 +11,7 @@ from typing import Optional
 from openttd.enumeration import Maturity
 
 g_parameter_store = None  # type: Optional[ParameterStoreStack]
+ssm_client = boto3.client('ssm')
 
 
 class ParameterResult:
@@ -64,7 +67,10 @@ class ParameterStoreStack(Stack):
             raise Exception("Please use a path for a parameter name")
         parameter_name = self.get_parameter_name(name)
 
-        print(f"INFO: make sure SecureString '{parameter_name}' exists (CloudFormation currently can't create those)")
+        res = ssm_client.describe_parameters(ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [parameter_name]}])
+        if not len(res["Parameters"]):
+            print(f"ERROR: create SecureString '{parameter_name}' manually (CloudFormation currently can't create those)")
+
         parameter = StringParameter.from_secure_string_parameter_attributes(self, parameter_name,
             parameter_name=parameter_name,
             # 'version' is just a dummny value, as in our usage we only care

@@ -10,9 +10,9 @@ from openttd.construct.policy import Policy
 from openttd.enumeration import Deployment
 
 
-class WebsiteStack(Stack):
-    application_name = "Website"
-    subdomain_name = "www"
+class BinariesRedirectStack(Stack):
+    application_name = "BinariesRedirect"
+    subdomain_name = "binaries"
 
     def __init__(self,
                  scope: Construct,
@@ -31,20 +31,21 @@ class WebsiteStack(Stack):
 
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
-            priority = 10
+            priority = 50
         else:
             desired_count = 1
-            priority = 110
+            priority = 150
 
         ECSHTTPSContainer(self, self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
-            image_name="openttd/website",
+            image_name="openttd/binaries-redirect",
             port=80,
             memory_limit_mib=128,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
-            )
+        )
+        # TODO -- Create this container

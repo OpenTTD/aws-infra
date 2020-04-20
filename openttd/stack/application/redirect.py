@@ -60,8 +60,10 @@ class RedirectStack(Stack):
                 subdomain_name=subdomain_name,
                 bucket_site=bucket_site,
                 bucket_access_logs=bucket_access_logs,
-                lambda_function_associations=LambdaFunctionAssociation(
-                    event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
-                    lambda_function=func,
-                ),
+                lambda_function_associations=[
+                    LambdaFunctionAssociation(
+                        event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                        lambda_function=func,
+                    ),
+                ],
             )

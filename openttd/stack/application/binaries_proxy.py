@@ -12,6 +12,7 @@ from openttd.enumeration import Deployment
 
 class BinariesProxyStack(Stack):
     application_name = "BinariesProxy"
+    subdomain_name = "proxy.binaries"
 
     def __init__(self,
                  scope: Construct,
@@ -36,7 +37,7 @@ class BinariesProxyStack(Stack):
             priority = 120
 
         ECSHTTPSContainer(self, self.application_name,
-            subdomain_name="proxy.binaries",
+            subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,

@@ -50,10 +50,12 @@ class CdnStack(Stack):
         s3_cloud_front = S3CloudFront(self, "S3CloudFront",
             subdomain_name=self.subdomain_name,
             error_folder="/errors",
-            lambda_function_associations=LambdaFunctionAssociation(
-                event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
-                lambda_function=func,
-            ),
+            lambda_function_associations=[
+                LambdaFunctionAssociation(
+                    event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                    lambda_function=func,
+                ),
+            ],
             additional_fqdns=additional_fqdns,
             price_class=PriceClass.PRICE_CLASS_ALL,
         )

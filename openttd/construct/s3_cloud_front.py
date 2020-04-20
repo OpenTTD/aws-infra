@@ -15,6 +15,7 @@ from aws_cdk.aws_cloudfront import (
     SourceConfiguration,
     S3OriginConfig,
     ViewerCertificate,
+    ViewerProtocolPolicy,
 )
 from aws_cdk.aws_iam import (
     ManagedPolicy,
@@ -50,6 +51,7 @@ class S3CloudFront(Construct):
                  bucket_site: Optional[Bucket] = None,
                  bucket_access_logs: Optional[Bucket] = None,
                  price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
+                 viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                  ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
@@ -97,9 +99,7 @@ class S3CloudFront(Construct):
                 behaviors=[
                     Behavior(
                         is_default_behavior=True,
-                        lambda_function_associations=[
-                            lambda_function_associations,
-                        ],
+                        lambda_function_associations=lambda_function_associations,
                     )
                 ]
             )],
@@ -113,6 +113,7 @@ class S3CloudFront(Construct):
                 certificate=cert.certificate,
                 aliases=[cert.fqdn] + additional_fqdns,
             ),
+            viewer_protocol_policy=viewer_protocol_policy,
         )
 
         ARecord(self, f"{cert.fqdn}-ARecord",

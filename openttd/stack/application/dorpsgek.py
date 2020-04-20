@@ -16,6 +16,7 @@ from openttd.stack.common import parameter_store
 
 class DorpsgekStack(Stack):
     application_name = "Dorpsgek"
+    subdomain_name = "dorpsgek"
 
     def __init__(self,
                  scope: Construct,
@@ -46,7 +47,7 @@ class DorpsgekStack(Stack):
         github_app_secret = parameter_store.add_secure_string("/Dorpsgek/GithubAppSecret").parameter
 
         ECSHTTPSContainer(self, self.application_name,
-            subdomain_name="dorpsgek",
+            subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
