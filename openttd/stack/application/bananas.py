@@ -12,6 +12,7 @@ from aws_cdk.aws_ecs import (
     ICluster,
     Secret,
 )
+from aws_cdk.aws_ec2 import Port
 from aws_cdk.aws_iam import PolicyStatement
 from aws_cdk.aws_s3 import Bucket
 from typing import (
@@ -28,6 +29,7 @@ from openttd.construct.s3_cloud_front import (
 from openttd.enumeration import Deployment
 from openttd.stack.common import (
     dns,
+    nlb_self as nlb,
     parameter_store,
 )
 
@@ -157,6 +159,7 @@ class BananasServerStack(Stack):
     application_name = "BananasServer"
     subdomain_name = "binaries"
     path_pattern = "/bananas"
+    nlb_subdomain_name = "content"
 
     def __init__(self,
                  scope: Construct,
@@ -178,10 +181,12 @@ class BananasServerStack(Stack):
             desired_count = 2
             priority = 44
             github_url = "https://github.com/OpenTTD/BaNaNaS"
+            content_port = 3978
         else:
             desired_count = 1
             priority = 144
             github_url = "https://github.com/OpenTTD/BaNaNaS-staging"
+            content_port = 4978
 
         cdn_fqdn = dns.subdomain_to_fqdn("bananas.cdn")
         cdn_url = f"http://{cdn_fqdn}"
@@ -208,6 +213,8 @@ class BananasServerStack(Stack):
                 "--index-github-url", github_url,
                 "--cdn-url", cdn_url,
                 "--bind", "0.0.0.0",
+                "--content-port", str(content_port),
+                "--proxy-protocol",
             ],
             environment={
                 "BANANAS_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -217,6 +224,9 @@ class BananasServerStack(Stack):
                 "BANANAS_SERVER_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
             },
         )
+
+        container.add_port(content_port)
+        nlb.add_nlb(container.service, Port.tcp(content_port), self.nlb_subdomain_name, "BaNaNaS Server")
 
         container.task_role.add_to_policy(PolicyStatement(
             actions=[

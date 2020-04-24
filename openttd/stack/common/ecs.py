@@ -12,6 +12,8 @@ from aws_cdk.aws_ecs import (
 from aws_cdk.aws_ec2 import (
     InstanceType,
     IVpc,
+    Port,
+    SecurityGroup,
 )
 
 
@@ -36,6 +38,23 @@ class EcsStack(Stack):
             min_capacity=2,
         )
         self._cluster.add_auto_scaling_group(asg)
+
+        # Create a SecurityGroup that the NLB can use to allow traffic from
+        # NLB to us. This avoids a cyclic dependency.
+        self.security_group = SecurityGroup(self, "SecurityGroup",
+            vpc=vpc,
+            allow_all_outbound=False,
+        )
+
+        # We could also make an additional security-group and add that to
+        # the ASG, but it keeps adding up. This makes it a tiny bit
+        # easier to get an overview what traffic is allowed from the
+        # console on AWS.
+        asg.node.children[0].add_ingress_rule(
+            peer=self.security_group,
+            connection=Port.tcp_range(32768, 65535),
+            description="NLB-self to target",
+        )
 
     @property
     def cluster(self) -> ICluster:

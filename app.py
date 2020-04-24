@@ -33,6 +33,7 @@ from openttd.stack.common.dns import DnsStack
 from openttd.stack.common.ecs import EcsStack
 from openttd.stack.common.lambda_edge import LambdaEdgeStack
 from openttd.stack.common.listener_https import ListenerHttpsStack
+from openttd.stack.common.nlb_self import NlbStack
 from openttd.stack.common.parameter_store import ParameterStoreStack
 from openttd.stack.common.policy import PolicyStack
 from openttd.stack.common.tasks import TasksStack
@@ -103,6 +104,14 @@ ListenerHttpsStack(app, f"{prefix}Listener-Https",
     env=env,
 )
 
+# The NLB has a HTTP site for health-checks. Allow access to it, also from
+# the Internet, as that can make debugging a lot easier.
+dns.set_domain_name(domain_names[Deployment.PRODUCTION])
+nlb = NlbStack(app, f"{prefix}Nlb",
+    vpc=vpc.vpc,
+    ecs=ecs,
+    env=env,
+)
 
 for deployment in Deployment:
     prefix = f"{maturity.value}-{deployment.value}-"
