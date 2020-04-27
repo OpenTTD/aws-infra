@@ -69,16 +69,16 @@ class ListenerHttpsStack(Stack):
         )
 
         # Add a redirect; in case people go to HTTP, redirect them to HTTPS.
-        http_listener = ApplicationListener(self, "Listener-Http",
+        self._http_listener = ApplicationListener(self, "Listener-Http",
             load_balancer=alb,
             port=80,
             protocol=ApplicationProtocol.HTTP,
         )
-        http_listener.connections.allow_default_port_from(
+        self._http_listener.connections.allow_default_port_from(
             other=Peer.any_ipv6(),
             description="Allow from anyone on port 80",
         )
-        http_listener.add_redirect_response("Http-To-Https",
+        self._http_listener.add_redirect_response("Http-To-Https",
             status_code="HTTP_301",
             port="443",
             protocol="HTTPS",
@@ -104,7 +104,8 @@ class ListenerHttpsStack(Stack):
                     target: IApplicationLoadBalancerTarget,
                     priority: int,
                     *,
-                    path_pattern: Optional[str] = None) -> None:
+                    path_pattern: Optional[str] = None,
+                    allow_via_http: Optional[bool] = False) -> None:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
         cert = self._subdomains_cert.get(fqdn)
@@ -125,7 +126,7 @@ class ListenerHttpsStack(Stack):
         else:
             id = fqdn
 
-        self._listener.add_targets(id,
+        target_group = self._listener.add_targets(id,
             deregistration_delay=Duration.seconds(30),
             slow_start=Duration.seconds(30),
             stickiness_cookie_duration=Duration.minutes(5),
@@ -137,6 +138,14 @@ class ListenerHttpsStack(Stack):
             path_pattern=path_pattern,
             priority=priority,
         )
+
+        if allow_via_http:
+            self._http_listener.add_target_groups(f"{id}http",
+                target_groups=[target_group],
+                host_header=fqdn,
+                path_pattern=path_pattern,
+                priority=priority,
+            )
 
         if fqdn not in self._subdomains_cert:
             ARecord(self, f"{cert.fqdn}-ARecord",
@@ -156,8 +165,9 @@ def add_targets(subdomain_name: str,
                 target: IApplicationLoadBalancerTarget,
                 priority: int,
                 *,
-                path_pattern: Optional[str] = None) -> None:
+                path_pattern: Optional[str] = None,
+                allow_via_http: Optional[bool] = False) -> None:
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern)
+    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http)

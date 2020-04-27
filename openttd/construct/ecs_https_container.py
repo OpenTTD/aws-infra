@@ -43,6 +43,7 @@ class ECSHTTPSContainer(Construct):
                  cluster: ICluster,
                  priority: int,
                  path_pattern: Optional[str] = None,
+                 allow_via_http: Optional[bool] = False,
                  command: Optional[List[str]] = None,
                  environment: Mapping[str, str] = {},
                  secrets: Mapping[str, Secret] = {}) -> None:
@@ -100,6 +101,7 @@ class ECSHTTPSContainer(Construct):
             port=port,
             priority=priority,
             path_pattern=path_pattern,
+            allow_via_http=allow_via_http,
         )
 
         # Remove the security group from this stack, and add it to the ALB stack
@@ -119,11 +121,13 @@ class ECSHTTPSContainer(Construct):
                    port: int,
                    priority: int,
                    *,
-                   path_pattern: Optional[str] = None):
+                   path_pattern: Optional[str] = None,
+                   allow_via_http: Optional[bool] = False) -> None:
         listener_https.add_targets(
             subdomain_name=subdomain_name,
             port=port,
             target=self.service.load_balancer_target(container_name="Container", container_port=port),
             priority=priority,
             path_pattern=path_pattern,
+            allow_via_http=allow_via_http,
         )

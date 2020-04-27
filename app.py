@@ -19,6 +19,7 @@ from openttd.stack.application.bananas import (
     BananasApiStack,
     BananasCdnStack,
     BananasFrontendWebStack,
+    BananasReload,
     BananasServerStack,
 )
 from openttd.stack.application.docs import DocsStack
@@ -109,7 +110,8 @@ ListenerHttpsStack(app, f"{prefix}Listener-Https",
 dns.set_domain_name(domain_names[Deployment.PRODUCTION])
 nlb = NlbStack(app, f"{prefix}Nlb",
     vpc=vpc.vpc,
-    ecs=ecs,
+    cluster=ecs.cluster,
+    ecs_security_group=ecs.security_group,
     env=env,
 )
 
@@ -150,21 +152,39 @@ for deployment in Deployment:
             env=env,
         )
         bananas_api_policy = PolicyStack(app, f"{prefix}BananasApi-Policy", env=env).policy
-        BananasApiStack(app, f"{prefix}BananasApi",
+        bananas_api = BananasApiStack(app, f"{prefix}BananasApi",
             deployment=deployment,
             policy=bananas_api_policy,
             cluster=ecs.cluster,
             bucket=bananas_cdn.bucket,
             env=env,
         )
+        BananasReload(app, f"{prefix}BananasApiReload",
+            deployment=deployment,
+            vpc=vpc.vpc,
+            cluster=ecs.cluster,
+            service=bananas_api.container.service,
+            ecs_security_group=ecs.security_group,
+            env=env,
+        )
+
         bananas_server_policy = PolicyStack(app, f"{prefix}BananasServer-Policy", env=env).policy
-        BananasServerStack(app, f"{prefix}BananasServer",
+        bananas_server = BananasServerStack(app, f"{prefix}BananasServer",
             deployment=deployment,
             policy=bananas_server_policy,
             cluster=ecs.cluster,
             bucket=bananas_cdn.bucket,
             env=env,
         )
+        BananasReload(app, f"{prefix}BananasServerReload",
+            deployment=deployment,
+            vpc=vpc.vpc,
+            cluster=ecs.cluster,
+            service=bananas_server.container.service,
+            ecs_security_group=ecs.security_group,
+            env=env,
+        )
+
         bananas_frontend_web_policy = PolicyStack(app, f"{prefix}BananasFrontendWeb-Policy", env=env).policy
         BananasFrontendWebStack(app, f"{prefix}BananasFrontendWeb",
             deployment=deployment,
@@ -200,18 +220,26 @@ for deployment in Deployment:
             ]
         else:
             additional_fqdns = None
-
         CdnStack(app, f"{prefix}Cdn",
             deployment=deployment,
             additional_fqdns=additional_fqdns,
             env=env,
         )
 
-        # TODO -- Temporary disabled till we go to production
-        # InstallerStack(app, f"{prefix}Installer",
-        #     deployment=deployment,
-        #     env=env,
-        # )
+        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
+        # connections between CloudFlare and CloudFront, we provision the
+        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
+        if maturity == Maturity.PRODUCTION:
+            additional_fqdns = [
+                "installer.openttd-cdn.org",
+            ]
+        else:
+            additional_fqdns = None
+        InstallerStack(app, f"{prefix}Installer",
+            deployment=deployment,
+            additional_fqdns=additional_fqdns,
+            env=env,
+        )
 
         DocsStack(app, f"{prefix}Docs",
             deployment=deployment,

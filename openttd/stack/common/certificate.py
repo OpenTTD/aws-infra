@@ -61,9 +61,6 @@ class CertificateStack(Stack):
             domain_name=fqdn,
             subject_alternative_names=additional_fqdns,
             region=region,
-            validation_domains={
-                fqdn: dns.get_domain_name(),
-            },
             validation_method=ValidationMethod.DNS,
         )
 

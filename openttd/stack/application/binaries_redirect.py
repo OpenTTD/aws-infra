@@ -47,5 +47,5 @@ class BinariesRedirectStack(Stack):
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
+            allow_via_http=True,
         )
-        # TODO -- Create this container

@@ -1,5 +1,6 @@
 from aws_cdk.core import (
     Construct,
+    Duration,
     Stack,
     StringConcat,
     Tag,
@@ -10,10 +11,23 @@ from aws_cdk.aws_cloudfront import (
 )
 from aws_cdk.aws_ecs import (
     ICluster,
+    IEc2Service,
     Secret,
 )
-from aws_cdk.aws_ec2 import Port
-from aws_cdk.aws_iam import PolicyStatement
+from aws_cdk.aws_ec2 import (
+    IVpc,
+    Port,
+    SecurityGroup,
+)
+from aws_cdk.aws_iam import (
+    ManagedPolicy,
+    PolicyStatement,
+)
+from aws_cdk.aws_lambda import (
+    Code,
+    Function,
+    Runtime,
+)
 from aws_cdk.aws_s3 import Bucket
 from typing import (
     List,
@@ -104,7 +118,7 @@ class BananasApiStack(Stack):
         index_github_private_key = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/IndexGithubPrivateKey").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/ReloadSecret").parameter
 
-        container = ECSHTTPSContainer(self, self.application_name,
+        self.container = ECSHTTPSContainer(self, self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
@@ -136,15 +150,15 @@ class BananasApiStack(Stack):
                 "BANANAS_API_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
             },
         )
-        container.add_port(1080)
-        container.add_target(
+        self.container.add_port(1080)
+        self.container.add_target(
             subdomain_name=self.subdomain_name,
             port=1080,
             priority=tus_priority,
             path_pattern="/new-package/tus/*",
         )
 
-        container.task_role.add_to_policy(PolicyStatement(
+        self.container.task_role.add_to_policy(PolicyStatement(
             actions=[
                 "s3:PutObject",
                 "s3:PutObjectAcl",
@@ -178,7 +192,7 @@ class BananasServerStack(Stack):
         policy.add_stack(self)
 
         if deployment == Deployment.PRODUCTION:
-            desired_count = 2
+            desired_count = 1
             priority = 44
             github_url = "https://github.com/OpenTTD/BaNaNaS"
             content_port = 3978
@@ -194,9 +208,10 @@ class BananasServerStack(Stack):
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
 
-        container = ECSHTTPSContainer(self, self.application_name,
+        self.container = ECSHTTPSContainer(self, self.application_name,
             subdomain_name=self.subdomain_name,
             path_pattern=self.path_pattern,
+            allow_via_http=True,
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
@@ -225,15 +240,17 @@ class BananasServerStack(Stack):
             },
         )
 
-        container.add_port(content_port)
-        nlb.add_nlb(container.service, Port.tcp(content_port), self.nlb_subdomain_name, "BaNaNaS Server")
+        self.container.add_port(content_port)
+        nlb.add_nlb(self, self.container.service, Port.tcp(content_port), self.nlb_subdomain_name, "BaNaNaS Server")
 
-        container.task_role.add_to_policy(PolicyStatement(
+        self.container.task_role.add_to_policy(PolicyStatement(
             actions=[
+                "s3:GetObject",
                 "s3:ListBucket",
             ],
             resources=[
                 bucket.bucket_arn,
+                StringConcat().join(bucket.bucket_arn, "/*"),
             ]
         ))
 
@@ -283,7 +300,6 @@ class BananasFrontendWebStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
-                "--authentication-method", "github",
                 "--api-url", api_url,
                 "--frontend-url", frontend_url,
                 "run",
@@ -297,3 +313,63 @@ class BananasFrontendWebStack(Stack):
                 "WEBCLIENT_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
             },
         )
+
+
+class BananasReload(Stack):
+    application_name = "BananasReload"
+
+    def __init__(self,
+                 scope: Construct,
+                 id: str,
+                 *,
+                 vpc: IVpc,
+                 cluster: ICluster,
+                 service: IEc2Service,
+                 ecs_security_group: SecurityGroup,
+                 deployment: Deployment,
+                 **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        Tag.add(self, "Application", self.application_name)
+        Tag.add(self, "Deployment", deployment.value)
+
+        security_group = SecurityGroup(self, "LambdaSG",
+            vpc=vpc,
+        )
+
+        lambda_func = Function(self, f"ReloadLambda",
+            code=Code.from_asset("./lambdas/bananas-reload"),
+            handler="index.lambda_handler",
+            runtime=Runtime.PYTHON_3_8,
+            timeout=Duration.seconds(30),
+            environment={
+                "CLUSTER": cluster.cluster_arn,
+                "SERVICE": service.service_arn,
+            },
+            vpc=vpc,
+            security_groups=[security_group, ecs_security_group],
+        )
+        lambda_func.add_to_role_policy(PolicyStatement(
+            actions=[
+                "ec2:DescribeInstances",
+                "ecs:DescribeContainerInstances",
+                "ecs:DescribeTasks",
+                "ecs:ListContainerInstances",
+                "ecs:ListServices",
+                "ecs:ListTagsForResource",
+                "ecs:ListTasks",
+            ],
+            resources=[
+                "*",
+            ],
+        ))
+
+        policy = ManagedPolicy(self, "Policy")
+        policy.add_statements(PolicyStatement(
+            actions=[
+                "lambda:InvokeFunction",
+            ],
+            resources=[
+                lambda_func.function_arn
+            ],
+        ))
