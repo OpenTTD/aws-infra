@@ -374,6 +374,7 @@ class NlbStack(Stack):
         Tag.add(service, "NLB-port", str(port_dict["fromPort"]))
 
         self.create_alias(scope, subdomain_name)
+        self.create_alias(scope, f"{subdomain_name}.aws")
 
         self.security_group.add_ingress_rule(
             peer=Peer.any_ipv6(),

@@ -134,72 +134,70 @@ for deployment in Deployment:
         env=env,
     )
 
-    # TODO -- For now we only deploy on staging
-    if deployment == Deployment.STAGING:
-        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
-        # connections between CloudFlare and CloudFront, we provision the
-        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
-        if deployment == Deployment.PRODUCTION and maturity == Maturity.PRODUCTION:
-            additional_fqdns = [
-                "bananas.openttd-cdn.org",
-            ]
-        else:
-            additional_fqdns = None
+    # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
+    # connections between CloudFlare and CloudFront, we provision the
+    # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
+    if deployment == Deployment.PRODUCTION and maturity == Maturity.PRODUCTION:
+        additional_fqdns = [
+            "bananas.openttd-cdn.org",
+        ]
+    else:
+        additional_fqdns = None
 
-        bananas_cdn = BananasCdnStack(app, f"{prefix}BananasCdn",
-            deployment=deployment,
-            additional_fqdns=additional_fqdns,
-            env=env,
-        )
-        bananas_api_policy = PolicyStack(app, f"{prefix}BananasApi-Policy", env=env).policy
-        bananas_api = BananasApiStack(app, f"{prefix}BananasApi",
-            deployment=deployment,
-            policy=bananas_api_policy,
-            cluster=ecs.cluster,
-            bucket=bananas_cdn.bucket,
-            env=env,
-        )
-        BananasReload(app, f"{prefix}BananasApiReload",
-            deployment=deployment,
-            vpc=vpc.vpc,
-            cluster=ecs.cluster,
-            service=bananas_api.container.service,
-            ecs_security_group=ecs.security_group,
-            env=env,
-        )
+    bananas_cdn = BananasCdnStack(app, f"{prefix}BananasCdn",
+        deployment=deployment,
+        additional_fqdns=additional_fqdns,
+        env=env,
+    )
+    bananas_api_policy = PolicyStack(app, f"{prefix}BananasApi-Policy", env=env).policy
+    bananas_api = BananasApiStack(app, f"{prefix}BananasApi",
+        deployment=deployment,
+        policy=bananas_api_policy,
+        cluster=ecs.cluster,
+        bucket=bananas_cdn.bucket,
+        env=env,
+    )
+    BananasReload(app, f"{prefix}BananasApiReload",
+        deployment=deployment,
+        vpc=vpc.vpc,
+        cluster=ecs.cluster,
+        service=bananas_api.container.service,
+        ecs_security_group=ecs.security_group,
+        env=env,
+    )
 
-        bananas_server_policy = PolicyStack(app, f"{prefix}BananasServer-Policy", env=env).policy
-        bananas_server = BananasServerStack(app, f"{prefix}BananasServer",
-            deployment=deployment,
-            policy=bananas_server_policy,
-            cluster=ecs.cluster,
-            bucket=bananas_cdn.bucket,
-            env=env,
-        )
-        BananasReload(app, f"{prefix}BananasServerReload",
-            deployment=deployment,
-            vpc=vpc.vpc,
-            cluster=ecs.cluster,
-            service=bananas_server.container.service,
-            ecs_security_group=ecs.security_group,
-            env=env,
-        )
+    bananas_server_policy = PolicyStack(app, f"{prefix}BananasServer-Policy", env=env).policy
+    bananas_server = BananasServerStack(app, f"{prefix}BananasServer",
+        deployment=deployment,
+        policy=bananas_server_policy,
+        cluster=ecs.cluster,
+        bucket=bananas_cdn.bucket,
+        env=env,
+    )
+    BananasReload(app, f"{prefix}BananasServerReload",
+        deployment=deployment,
+        vpc=vpc.vpc,
+        cluster=ecs.cluster,
+        service=bananas_server.container.service,
+        ecs_security_group=ecs.security_group,
+        env=env,
+    )
 
-        bananas_frontend_web_policy = PolicyStack(app, f"{prefix}BananasFrontendWeb-Policy", env=env).policy
-        BananasFrontendWebStack(app, f"{prefix}BananasFrontendWeb",
-            deployment=deployment,
-            policy=bananas_frontend_web_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    bananas_frontend_web_policy = PolicyStack(app, f"{prefix}BananasFrontendWeb-Policy", env=env).policy
+    BananasFrontendWebStack(app, f"{prefix}BananasFrontendWeb",
+        deployment=deployment,
+        policy=bananas_frontend_web_policy,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
-        binaries_redirect_policy = PolicyStack(app, f"{prefix}BinariesRedirect-Policy", env=env).policy
-        BinariesRedirectStack(app, f"{prefix}BinariesRedirect",
-            deployment=deployment,
-            policy=binaries_redirect_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    binaries_redirect_policy = PolicyStack(app, f"{prefix}BinariesRedirect-Policy", env=env).policy
+    BinariesRedirectStack(app, f"{prefix}BinariesRedirect",
+        deployment=deployment,
+        policy=binaries_redirect_policy,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
     if deployment == Deployment.PRODUCTION:
         dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy

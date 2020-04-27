@@ -1,4 +1,7 @@
-from aws_cdk.core import Construct
+from aws_cdk.core import (
+    Construct,
+    Duration,
+)
 from aws_cdk.aws_ecs import (
     BuiltInAttributes,
     ContainerImage,
@@ -43,6 +46,7 @@ class ECSHTTPSContainer(Construct):
                  cluster: ICluster,
                  priority: int,
                  path_pattern: Optional[str] = None,
+                 health_check_grace_period: Optional[Duration] = None,
                  allow_via_http: Optional[bool] = False,
                  command: Optional[List[str]] = None,
                  environment: Mapping[str, str] = {},
@@ -89,6 +93,7 @@ class ECSHTTPSContainer(Construct):
             cluster=cluster,
             task_definition=task_definition,
             desired_count=desired_count,
+            health_check_grace_period=health_check_grace_period,
         )
         policy.add_service(self.service)
 

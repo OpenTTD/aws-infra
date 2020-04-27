@@ -9,16 +9,16 @@ client_ec2 = None
 
 
 def write_nginx_config(load_balancer):
-    for listener, backends in load_balancer.items():
-        protocol, port = listener
+    with open(f"nlb.conf", "w") as fp:
+        fp.write(f"stream {{\n")
 
-        if protocol == "tcp":
-            protocol_if_not_tcp = ""
-        else:
-            protocol_if_not_tcp = protocol
+        for listener, backends in load_balancer.items():
+            protocol, port = listener
 
-        with open(f"{protocol}{port}.conf", "w") as fp:
-            fp.write(f"stream {{\n")
+            if protocol == "tcp":
+                protocol_if_not_tcp = ""
+            else:
+                protocol_if_not_tcp = protocol
 
             fp.write(f"  upstream {protocol}{port} {{\n")
             fp.write(f"    hash $remote_addr;\n")
@@ -34,7 +34,7 @@ def write_nginx_config(load_balancer):
             fp.write(f"    proxy_protocol on;\n")
             fp.write(f"  }}\n")
 
-            fp.write(f"}}\n")
+        fp.write(f"}}\n")
 
     os.system("systemctl reload nginx")
 

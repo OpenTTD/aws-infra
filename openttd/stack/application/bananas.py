@@ -103,12 +103,14 @@ class BananasApiStack(Stack):
             desired_count = 1  # Currently this pod is stateful, and as such cannot be run more than once
             tus_priority = 40
             priority = 42
+            memory = 256
             github_url = "git@github.com:OpenTTD/BaNaNaS.git"
             client_file = "clients-production.yaml"
         else:
             desired_count = 1
             tus_priority = 140
             priority = 142
+            memory = 128
             github_url = "git@github.com:OpenTTD/BaNaNaS-staging.git"
             client_file = "clients-staging.yaml"
 
@@ -125,7 +127,7 @@ class BananasApiStack(Stack):
             application_name=self.application_name,
             image_name="openttd/bananas-api",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=memory,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
@@ -192,13 +194,15 @@ class BananasServerStack(Stack):
         policy.add_stack(self)
 
         if deployment == Deployment.PRODUCTION:
-            desired_count = 1
+            desired_count = 2
             priority = 44
-            github_url = "https://github.com/OpenTTD/BaNaNaS"
+            memory = 512
+            github_url = "git@github.com:OpenTTD/BaNaNaS.git"
             content_port = 3978
         else:
             desired_count = 1
             priority = 144
+            memory = 128
             github_url = "https://github.com/OpenTTD/BaNaNaS-staging"
             content_port = 4978
 
@@ -207,6 +211,14 @@ class BananasServerStack(Stack):
 
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
+
+        secrets = {
+            "BANANAS_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
+            "BANANAS_SERVER_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
+        }
+        if deployment == Deployment.PRODUCTION:
+            index_github_private_key = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/IndexGithubPrivateKey").parameter
+            secrets["BANANAS_SERVER_INDEX_GITHUB_PRIVATE_KEY"] = Secret.from_ssm_parameter(index_github_private_key)
 
         self.container = ECSHTTPSContainer(self, self.application_name,
             subdomain_name=self.subdomain_name,
@@ -217,7 +229,7 @@ class BananasServerStack(Stack):
             application_name=self.application_name,
             image_name="openttd/bananas-server",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=memory,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
@@ -234,10 +246,7 @@ class BananasServerStack(Stack):
             environment={
                 "BANANAS_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
             },
-            secrets={
-                "BANANAS_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
-                "BANANAS_SERVER_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
-            },
+            secrets=secrets,
         )
 
         self.container.add_port(content_port)
@@ -341,7 +350,7 @@ class BananasReload(Stack):
             code=Code.from_asset("./lambdas/bananas-reload"),
             handler="index.lambda_handler",
             runtime=Runtime.PYTHON_3_8,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(120),
             environment={
                 "CLUSTER": cluster.cluster_arn,
                 "SERVICE": service.service_arn,

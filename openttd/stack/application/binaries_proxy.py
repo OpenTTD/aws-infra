@@ -43,7 +43,7 @@ class BinariesProxyStack(Stack):
             application_name=self.application_name,
             image_name="openttd/binaries-proxy",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=16,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,

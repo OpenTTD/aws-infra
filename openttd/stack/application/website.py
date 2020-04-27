@@ -43,7 +43,7 @@ class WebsiteStack(Stack):
             application_name=self.application_name,
             image_name="openttd/website",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=32,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,

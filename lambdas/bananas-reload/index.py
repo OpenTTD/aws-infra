@@ -41,7 +41,7 @@ def lambda_handler(event, context):
                             f"http://{host_ip}:{host_port}/reload",
                             body=json.dumps({"secret": secret}),
                             headers={"Content-Type": "application/json"},
-                            timeout=urllib3.Timeout(connect=5, read=30),
+                            timeout=urllib3.Timeout(connect=5, read=60),
                             retries=False,
                         )
                         if response.status == 204:
@@ -51,6 +51,8 @@ def lambda_handler(event, context):
                     except urllib3.exceptions.NewConnectionError:
                         print("ERROR: Failed to connect to pod")
                     except urllib3.exceptions.ConnectTimeoutError:
+                        print("ERROR: Failed to connect to pod")
+                    except urllib3.exceptions.ReadTimeoutError:
                         print("ERROR: Failed to connect to pod")
 
 
