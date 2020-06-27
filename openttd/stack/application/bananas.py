@@ -6,6 +6,8 @@ from aws_cdk.core import (
     Tag,
 )
 from aws_cdk.aws_cloudfront import (
+    LambdaEdgeEventType,
+    LambdaFunctionAssociation,
     PriceClass,
     ViewerProtocolPolicy,
 )
@@ -43,6 +45,7 @@ from openttd.construct.s3_cloud_front import (
 from openttd.enumeration import Deployment
 from openttd.stack.common import (
     dns,
+    lambda_edge,
     nlb_self as nlb,
     parameter_store,
 )
@@ -64,9 +67,21 @@ class BananasCdnStack(Stack):
         Tag.add(self, "Application", self.application_name)
         Tag.add(self, "Deployment", deployment.value)
 
+        func = lambda_edge.create_function(self, f"BananasCdnRedirect{deployment.value}",
+            runtime=Runtime.NODEJS_10_X,
+            handler="index.handler",
+            code=Code.from_asset("./lambdas/bananas-cdn"),
+        )
+
         s3_cloud_front = S3CloudFront(self, "S3CloudFront",
             subdomain_name=self.subdomain_name,
             error_folder="/errors",
+            lambda_function_associations=[
+                LambdaFunctionAssociation(
+                    event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                    lambda_function=func,
+                ),
+            ],
             price_class=PriceClass.PRICE_CLASS_ALL,
             additional_fqdns=additional_fqdns,
             viewer_protocol_policy=ViewerProtocolPolicy.ALLOW_ALL,  # OpenTTD client doesn't support HTTPS
@@ -197,28 +212,22 @@ class BananasServerStack(Stack):
             desired_count = 2
             priority = 44
             memory = 512
-            github_url = "git@github.com:OpenTTD/BaNaNaS.git"
+            github_url = "https://github.com/OpenTTD/BaNaNaS"
             content_port = 3978
+            bootstrap_command = ["--bootstrap-unique-id", "4f474658"]
         else:
             desired_count = 1
             priority = 144
             memory = 128
             github_url = "https://github.com/OpenTTD/BaNaNaS-staging"
             content_port = 4978
+            bootstrap_command = []
 
         cdn_fqdn = dns.subdomain_to_fqdn("bananas.cdn")
         cdn_url = f"http://{cdn_fqdn}"
 
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
-
-        secrets = {
-            "BANANAS_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
-            "BANANAS_SERVER_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
-        }
-        if deployment == Deployment.PRODUCTION:
-            index_github_private_key = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/IndexGithubPrivateKey").parameter
-            secrets["BANANAS_SERVER_INDEX_GITHUB_PRIVATE_KEY"] = Secret.from_ssm_parameter(index_github_private_key)
 
         self.container = ECSHTTPSContainer(self, self.application_name,
             subdomain_name=self.subdomain_name,
@@ -242,11 +251,14 @@ class BananasServerStack(Stack):
                 "--bind", "0.0.0.0",
                 "--content-port", str(content_port),
                 "--proxy-protocol",
-            ],
+            ] + bootstrap_command,
             environment={
                 "BANANAS_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
             },
-            secrets=secrets,
+            secrets={
+                "BANANAS_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
+                "BANANAS_SERVER_RELOAD_SECRET": Secret.from_ssm_parameter(reload_secret),
+            },
         )
 
         self.container.add_port(content_port)
@@ -357,6 +369,7 @@ class BananasReload(Stack):
             },
             vpc=vpc,
             security_groups=[security_group, ecs_security_group],
+            reserved_concurrent_executions=1,
         )
         lambda_func.add_to_role_policy(PolicyStatement(
             actions=[
