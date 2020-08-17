@@ -11,7 +11,7 @@ from typing import Optional
 from openttd.enumeration import Maturity
 
 g_parameter_store = None  # type: Optional[ParameterStoreStack]
-ssm_client = boto3.client('ssm')
+ssm_client = boto3.client("ssm")
 
 
 class ParameterResult:

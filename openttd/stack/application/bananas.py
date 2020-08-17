@@ -358,7 +358,7 @@ class BananasReload(Stack):
             vpc=vpc,
         )
 
-        lambda_func = Function(self, f"ReloadLambda",
+        lambda_func = Function(self, "ReloadLambda",
             code=Code.from_asset("./lambdas/bananas-reload"),
             handler="index.lambda_handler",
             runtime=Runtime.PYTHON_3_8,
