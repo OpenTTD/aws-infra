@@ -22,6 +22,7 @@ setuptools.setup(
         "aws-cdk.aws-certificatemanager",
         "aws-cdk.aws-ecs",
         "aws-cdk.aws-elasticloadbalancingv2",
+        "aws_cdk.aws_events_targets",
         "aws-cdk.aws-logs",
         "aws-cdk.aws-route53",
         "aws-cdk.aws-s3",
