@@ -3,3 +3,4 @@
 __pycache__/
 *.pyc
 /secrets/
+/openttd/OpenTTD_IaC.egg-info
