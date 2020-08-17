@@ -96,6 +96,7 @@ class ECSHTTPSContainer(Construct):
             health_check_grace_period=health_check_grace_period,
         )
         policy.add_service(self.service)
+        policy.add_cluster(cluster)
 
         self.service.add_placement_strategies(
             PlacementStrategy.spread_across(BuiltInAttributes.AVAILABILITY_ZONE),
