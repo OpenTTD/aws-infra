@@ -24,6 +24,7 @@ from openttd.stack.application.bananas import (
 )
 from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
+from openttd.stack.application.flyspray import FlysprayStack
 from openttd.stack.application.installer import InstallerStack
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
@@ -196,6 +197,11 @@ for deployment in Deployment:
         deployment=deployment,
         policy=binaries_redirect_policy,
         cluster=ecs.cluster,
+        env=env,
+    )
+
+    FlysprayStack(app, f"{prefix}Flyspray",
+        deployment=deployment,
         env=env,
     )
 
