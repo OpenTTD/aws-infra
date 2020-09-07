@@ -21,7 +21,9 @@ from aws_cdk.aws_iam import (
 from aws_cdk.aws_lambda import (
     AssetCode,
     Function,
+    IVersion,
     Runtime,
+    Version,
 )
 from aws_cdk.aws_ssm import StringParameter
 from typing import Optional
@@ -101,7 +103,7 @@ class LambdaEdgeStack(Stack):
                         *,
                         code: AssetCode,
                         handler: str,
-                        runtime: Runtime) -> LambdaEdgeFunction:
+                        runtime: Runtime) -> IVersion:
         func = Function(self, id,
             code=code,
             handler=handler,
@@ -135,10 +137,10 @@ class LambdaEdgeStack(Stack):
             policy=AwsCustomResourcePolicy.from_sdk_calls(resources=AwsCustomResourcePolicy.ANY_RESOURCE),
         )
         # Create the lambda function based on this arn
-        return Function.from_function_arn(other_stack, id, cross_region_func.get_arn())
+        return Version.from_version_arn(other_stack, id, cross_region_func.get_arn())
 
 
-def create_function(other_stack: Stack, id, *, code: AssetCode, handler: str, runtime: Runtime) -> LambdaEdgeFunction:
+def create_function(other_stack: Stack, id, *, code: AssetCode, handler: str, runtime: Runtime) -> IVersion:
     if g_lambda_edge is None:
         raise Exception("No LambdaEdgeStack instance exists")
 
