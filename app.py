@@ -12,7 +12,6 @@ from openttd.enumeration import (
     Deployment,
     Maturity,
 )
-from openttd.stack.application.binaries_proxy import BinariesProxyStack
 from openttd.stack.application.binaries_redirect import BinariesRedirectStack
 from openttd.stack.application.cdn import CdnStack
 from openttd.stack.application.bananas import (
@@ -127,13 +126,6 @@ for deployment in Deployment:
         cluster=ecs.cluster,
         env=env,
     )
-    binaries_proxy_policy = PolicyStack(app, f"{prefix}BinariesProxy-Policy", env=env).policy
-    BinariesProxyStack(app, f"{prefix}BinariesProxy",
-        deployment=deployment,
-        policy=binaries_proxy_policy,
-        cluster=ecs.cluster,
-        env=env,
-    )
 
     # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
     # connections between CloudFlare and CloudFront, we provision the
@@ -205,6 +197,11 @@ for deployment in Deployment:
         env=env,
     )
 
+    RedirectStack(app, f"{prefix}Redirect",
+        deployment=deployment,
+        env=env,
+    )
+
     if deployment == Deployment.PRODUCTION:
         dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
         DorpsgekStack(app, f"{prefix}Dorpsgek",
@@ -246,11 +243,6 @@ for deployment in Deployment:
         )
 
         DocsStack(app, f"{prefix}Docs",
-            deployment=deployment,
-            env=env,
-        )
-
-        RedirectStack(app, f"{prefix}Redirect",
             deployment=deployment,
             env=env,
         )

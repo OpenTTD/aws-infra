@@ -27,6 +27,7 @@ class RedirectStack(Stack):
     subdomain_names = [
         "noai",
         "nogo",
+        "proxy.binaries",
     ]
 
     def __init__(self,
@@ -50,7 +51,7 @@ class RedirectStack(Stack):
         )
 
         for subdomain_name in self.subdomain_names:
-            func = lambda_edge.create_function(self, f"Redirect-{subdomain_name}",
+            func = lambda_edge.create_function(self, f"Redirect-{subdomain_name}-{deployment.value}",
                 runtime=Runtime.NODEJS_10_X,
                 handler="index.handler",
                 code=Code.from_asset(f"./lambdas/domain-redirect-{subdomain_name}"),
