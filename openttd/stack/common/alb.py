@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_ec2 import IVpc
 from aws_cdk.aws_elasticloadbalancingv2 import (
@@ -24,7 +24,7 @@ class AlbStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Stack", "Common-Alb")
+        Tags.of(self).add("Stack", "Common-Alb")
 
         self._alb = ApplicationLoadBalancer(self, "ALB",
             vpc=vpc,

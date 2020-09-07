@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_cloudfront import (
     LambdaEdgeEventType,
@@ -32,8 +32,8 @@ class DocsStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         func = lambda_edge.create_function(self, "DocsIndexRedirect",
             runtime=Runtime.NODEJS_10_X,

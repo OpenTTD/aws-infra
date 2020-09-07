@@ -31,7 +31,7 @@ from aws_cdk.core import (
     Construct,
     Duration,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_autoscaling import (
     AutoScalingGroup,
@@ -114,7 +114,7 @@ class NlbStack(Stack):
 
         global g_nlb
 
-        Tag.add(self, "Stack", "Common-Nlb")
+        Tags.of(self).add("Stack", "Common-Nlb")
 
         # TODO -- You need to do some manual actions:
         # TODO --  1) enable auto-assign IPv6 address on public subnets
@@ -370,8 +370,8 @@ class NlbStack(Stack):
 
     def add_nlb(self, scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str) -> None:
         port_dict = port.to_rule_json()
-        Tag.add(service, "NLB-protocol", port_dict["ipProtocol"])
-        Tag.add(service, "NLB-port", str(port_dict["fromPort"]))
+        Tags.of(service).add("NLB-protocol", port_dict["ipProtocol"])
+        Tags.of(service).add("NLB-port", str(port_dict["fromPort"]))
 
         self.create_alias(scope, subdomain_name)
         self.create_alias(scope, f"{subdomain_name}.aws")

@@ -2,7 +2,7 @@ from aws_cdk.core import (
     Construct,
     Duration,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_elasticloadbalancingv2 import (
     ApplicationListener,
@@ -46,7 +46,7 @@ class ListenerHttpsStack(Stack):
 
         global g_listener_https
 
-        Tag.add(self, "Stack", "Common-Listener-Https")
+        Tags.of(self).add("Stack", "Common-Listener-Https")
 
         self._used_priorities = []
         self._subdomains_cert = {}

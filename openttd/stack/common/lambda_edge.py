@@ -4,7 +4,7 @@ from aws_cdk.core import (
     Construct,
     Fn,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.custom_resources import (
     AwsCustomResource,
@@ -79,7 +79,7 @@ class LambdaEdgeStack(Stack):
 
         global g_lambda_edge
 
-        Tag.add(self, "Stack", "Common-Lambda-Edge")
+        Tags.of(self).add("Stack", "Common-Lambda-Edge")
 
         self._role = Role(self, "EdgeLambdaRole",
             assumed_by=CompositePrincipal(

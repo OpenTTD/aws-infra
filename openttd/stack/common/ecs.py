@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_autoscaling import AutoScalingGroup
 from aws_cdk.aws_ecs import (
@@ -25,7 +25,7 @@ class EcsStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Stack", "Common-Ecs")
+        Tags.of(self).add("Stack", "Common-Ecs")
 
         self._cluster = Cluster(self, "Cluster",
             vpc=vpc,

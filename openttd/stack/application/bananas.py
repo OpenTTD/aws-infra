@@ -3,7 +3,7 @@ from aws_cdk.core import (
     Duration,
     Stack,
     StringConcat,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_cloudfront import (
     LambdaEdgeEventType,
@@ -64,8 +64,8 @@ class BananasCdnStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         func = lambda_edge.create_function(self, f"BananasCdnRedirect{deployment.value}",
             runtime=Runtime.NODEJS_10_X,
@@ -109,8 +109,8 @@ class BananasApiStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         policy.add_stack(self)
 
@@ -203,8 +203,8 @@ class BananasServerStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         policy.add_stack(self)
 
@@ -290,8 +290,8 @@ class BananasFrontendWebStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         policy.add_stack(self)
 
@@ -351,8 +351,8 @@ class BananasReload(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Application", self.application_name)
-        Tag.add(self, "Deployment", deployment.value)
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
 
         security_group = SecurityGroup(self, "LambdaSG",
             vpc=vpc,

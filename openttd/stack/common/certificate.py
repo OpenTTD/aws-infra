@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_certificatemanager import (
     DnsValidatedCertificate,
@@ -44,7 +44,7 @@ class CertificateStack(Stack):
 
         self._last_certificate = None  # type: Optional[DnsValidatedCertificate]
 
-        Tag.add(self, "Stack", "Common-Certificate")
+        Tags.of(self).add("Stack", "Common-Certificate")
 
         if g_certificate is not None:
             raise Exception("Only a single CertificateStack instance can exist")

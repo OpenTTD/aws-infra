@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_iam import (
     Role,
@@ -33,7 +33,7 @@ class TasksStack(Stack):
 
         global g_tasks
 
-        Tag.add(self, "Stack", "Common-Tasks")
+        Tags.of(self).add("Stack", "Common-Tasks")
 
         if g_tasks is not None:
             raise Exception("Only a single TasksStack instance can exist")

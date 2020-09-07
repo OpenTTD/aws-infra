@@ -2,7 +2,7 @@ from aws_cdk.core import (
     Construct,
     Fn,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_ec2 import (
     CfnInternetGateway,
@@ -23,7 +23,7 @@ class VpcStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Stack", "Common-Vpc")
+        Tags.of(self).add("Stack", "Common-Vpc")
 
         # TODO -- Add network security (ACL, etc)
 

@@ -3,7 +3,7 @@ import boto3
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_ssm import StringParameter
 from typing import Optional
@@ -39,7 +39,7 @@ class ParameterStoreStack(Stack):
 
         global g_parameter_store
 
-        Tag.add(self, "Stack", "Common-ParameterStore")
+        Tags.of(self).add("Stack", "Common-ParameterStore")
 
         self._maturity = maturity.value
 

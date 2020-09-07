@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 from aws_cdk.aws_route53 import HostedZone
 from typing import Optional
@@ -22,7 +22,7 @@ class DnsStack(Stack):
 
         global g_hosted_zone, g_hosted_zone_name
 
-        Tag.add(self, "Stack", "Common-Dns")
+        Tags.of(self).add("Stack", "Common-Dns")
 
         if g_hosted_zone_name is not None:
             raise Exception("Only a single DNSStack instance can exist")

@@ -1,7 +1,7 @@
 from aws_cdk.core import (
     Construct,
     Stack,
-    Tag,
+    Tags,
 )
 
 from openttd.construct.policy import Policy
@@ -21,7 +21,7 @@ class PolicyStack(Stack):
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        Tag.add(self, "Stack", "Common-Policy")
+        Tags.of(self).add("Stack", "Common-Policy")
         self._policy = Policy(self, "Policy")
 
     @property
