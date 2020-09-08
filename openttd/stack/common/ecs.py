@@ -55,6 +55,11 @@ class EcsStack(Stack):
             connection=Port.tcp_range(32768, 65535),
             description="NLB-self to target",
         )
+        asg.node.children[0].add_ingress_rule(
+            peer=self.security_group,
+            connection=Port.udp_range(32768, 65535),
+            description="NLB-self to target (UDP)",
+        )
 
     @property
     def cluster(self) -> ICluster:

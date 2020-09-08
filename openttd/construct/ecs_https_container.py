@@ -122,6 +122,13 @@ class ECSHTTPSContainer(Construct):
             protocol=Protocol.TCP,
         ))
 
+    def add_udp_port(self,
+                 port: int):
+        self.container.add_port_mappings(PortMapping(
+            container_port=port,
+            protocol=Protocol.UDP,
+        ))
+
     def add_target(self,
                    subdomain_name: str,
                    port: int,

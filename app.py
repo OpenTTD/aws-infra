@@ -25,6 +25,11 @@ from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
 from openttd.stack.application.flyspray import FlysprayStack
 from openttd.stack.application.installer import InstallerStack
+from openttd.stack.application.master_server import (
+    MasterServerStack,
+    MasterServerApiStack,
+    MasterServerWebStack,
+)
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.common import dns
@@ -196,6 +201,31 @@ for deployment in Deployment:
         deployment=deployment,
         env=env,
     )
+
+    if deployment == Deployment.STAGING:
+        master_server_policy = PolicyStack(app, f"{prefix}MasterServer-Policy", env=env).policy
+        master_server = MasterServerStack(app, f"{prefix}MasterServer",
+            deployment=deployment,
+            policy=master_server_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
+
+        master_server_api_policy = PolicyStack(app, f"{prefix}MasterServerApi-Policy", env=env).policy
+        master_server_api = MasterServerApiStack(app, f"{prefix}MasterServerApi",
+            deployment=deployment,
+            policy=master_server_api_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
+
+        master_server_web_policy = PolicyStack(app, f"{prefix}MasterServerWeb-Policy", env=env).policy
+        MasterServerWebStack(app, f"{prefix}MasterServerWeb",
+            deployment=deployment,
+            policy=master_server_web_policy,
+            cluster=ecs.cluster,
+            env=env,
+        )
 
     RedirectStack(app, f"{prefix}Redirect",
         deployment=deployment,

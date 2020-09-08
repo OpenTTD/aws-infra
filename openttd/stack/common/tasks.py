@@ -22,7 +22,7 @@ class TasksStack(Stack):
     extra privileges, it is better to have all those in a single tasks.
 
     This means that the applications themself can run without any extra
-    privileges, allowing them to deploy in an automted fashion.
+    privileges, allowing them to deploy in an automated fashion.
     """
 
     def __init__(self,
