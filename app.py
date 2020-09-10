@@ -202,30 +202,29 @@ for deployment in Deployment:
         env=env,
     )
 
-    if deployment == Deployment.STAGING:
-        master_server_policy = PolicyStack(app, f"{prefix}MasterServer-Policy", env=env).policy
-        master_server = MasterServerStack(app, f"{prefix}MasterServer",
-            deployment=deployment,
-            policy=master_server_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    master_server_policy = PolicyStack(app, f"{prefix}MasterServer-Policy", env=env).policy
+    master_server = MasterServerStack(app, f"{prefix}MasterServer",
+        deployment=deployment,
+        policy=master_server_policy,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
-        master_server_api_policy = PolicyStack(app, f"{prefix}MasterServerApi-Policy", env=env).policy
-        master_server_api = MasterServerApiStack(app, f"{prefix}MasterServerApi",
-            deployment=deployment,
-            policy=master_server_api_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    master_server_api_policy = PolicyStack(app, f"{prefix}MasterServerApi-Policy", env=env).policy
+    master_server_api = MasterServerApiStack(app, f"{prefix}MasterServerApi",
+        deployment=deployment,
+        policy=master_server_api_policy,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
-        master_server_web_policy = PolicyStack(app, f"{prefix}MasterServerWeb-Policy", env=env).policy
-        MasterServerWebStack(app, f"{prefix}MasterServerWeb",
-            deployment=deployment,
-            policy=master_server_web_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    master_server_web_policy = PolicyStack(app, f"{prefix}MasterServerWeb-Policy", env=env).policy
+    MasterServerWebStack(app, f"{prefix}MasterServerWeb",
+        deployment=deployment,
+        policy=master_server_web_policy,
+        cluster=ecs.cluster,
+        env=env,
+    )
 
     RedirectStack(app, f"{prefix}Redirect",
         deployment=deployment,

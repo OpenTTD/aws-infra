@@ -71,7 +71,7 @@ class MasterServerApiStack(Stack):
         policy.add_stack(self)
 
         if deployment == Deployment.PRODUCTION:
-            desired_count = 1  # Currently this pod is stateful, and as such cannot be run more than once
+            desired_count = 2
             priority = 60
         else:
             desired_count = 1
