@@ -117,6 +117,7 @@ nlb = NlbStack(app, f"{prefix}Nlb",
     vpc=vpc.vpc,
     cluster=ecs.cluster,
     ecs_security_group=ecs.security_group,
+    ecs_source_security_group=ecs.source_security_group,
     env=env,
 )
 

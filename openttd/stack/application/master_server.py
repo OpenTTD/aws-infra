@@ -73,9 +73,11 @@ class MasterServerApiStack(Stack):
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
             priority = 60
+            dynamodb_prefix = "P-"
         else:
             desired_count = 1
             priority = 160
+            dynamodb_prefix = "S-"
 
         sentry_dsn = parameter_store.add_secure_string(f"/MasterServerApi/{deployment.value}/SentryDSN").parameter
 
@@ -95,6 +97,7 @@ class MasterServerApiStack(Stack):
                 "--bind", "0.0.0.0",
                 "--db", "dynamodb",
                 "--dynamodb-region", "eu-central-1",
+                "--dynamodb-prefix", dynamodb_prefix,
             ],
             environment={
                 "MASTER_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -103,6 +106,14 @@ class MasterServerApiStack(Stack):
                 "MASTER_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
             },
         )
+
+        table_and_index = []
+        for table in ("S-MSU-ip-port", "S-MSU-server", "P-MSU-ip-port", "P-MSU-server"):
+            table_and_index.extend([
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}",
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}/index/online_view",
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}/index/time_last_seen_view",
+            ])
 
         self.container.task_role.add_to_policy(PolicyStatement(
             actions=[
@@ -115,14 +126,7 @@ class MasterServerApiStack(Stack):
                 "dynamodb:Query",
                 "dynamodb:UpdateItem"
             ],
-            resources=[
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port/index/online_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port/index/time_last_seen_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server/index/online_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server/index/time_last_seen_view",
-            ]
+            resources=table_and_index,
         ))
 
 
@@ -150,10 +154,12 @@ class MasterServerStack(Stack):
             desired_count = 2
             priority = 61
             master_port = 3978
+            dynamodb_prefix = "P-"
         else:
             desired_count = 1
             priority = 161
             master_port = 4978
+            dynamodb_prefix = "S-"
 
         sentry_dsn = parameter_store.add_secure_string(f"/MasterServer/{deployment.value}/SentryDSN").parameter
 
@@ -174,7 +180,9 @@ class MasterServerStack(Stack):
                 "--msu-port", str(master_port),
                 "--db", "dynamodb",
                 "--dynamodb-region", self.region,
+                "--dynamodb-prefix", dynamodb_prefix,
                 "--proxy-protocol",
+                "--socks-proxy", "socks5://nlb.openttd.internal:8080",
             ],
             environment={
                 "MASTER_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -183,6 +191,14 @@ class MasterServerStack(Stack):
                 "MASTER_SERVER_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
             },
         )
+
+        table_and_index = []
+        for table in ("S-MSU-ip-port", "S-MSU-server", "P-MSU-ip-port", "P-MSU-server"):
+            table_and_index.extend([
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}",
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}/index/online_view",
+                f"arn:aws:dynamodb:{self.region}:{self.account}:table/{table}/index/time_last_seen_view",
+            ])
 
         self.container.task_role.add_to_policy(PolicyStatement(
             actions=[
@@ -195,14 +211,7 @@ class MasterServerStack(Stack):
                 "dynamodb:Query",
                 "dynamodb:UpdateItem"
             ],
-            resources=[
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port/index/online_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-ip-port/index/time_last_seen_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server/index/online_view",
-                f"arn:aws:dynamodb:{self.region}:{self.account}:table/MSU-server/index/time_last_seen_view",
-            ]
+            resources=table_and_index,
         ))
 
         self.container.add_udp_port(master_port)

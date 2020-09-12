@@ -73,6 +73,7 @@ from aws_cdk.aws_lambda import (
 from aws_cdk.aws_route53 import (
     ARecord,
     AaaaRecord,
+    HostedZone,
     IAliasRecordTarget,
     RecordTarget,
 )
@@ -108,6 +109,7 @@ class NlbStack(Stack):
                  id: str,
                  cluster: ICluster,
                  ecs_security_group: SecurityGroup,
+                 ecs_source_security_group: SecurityGroup,
                  vpc: IVpc,
                  **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -119,6 +121,11 @@ class NlbStack(Stack):
         # TODO -- You need to do some manual actions:
         # TODO --  1) enable auto-assign IPv6 address on public subnets
         # TODO --  2) add to the Outbound rules of "Live-Common-Nlb/ASG/InstanceSecurityGroup" the destination "::/0"
+
+        self.private_zone = HostedZone.from_lookup(self, "PrivateZone",
+            domain_name="openttd.internal",
+            private_zone=True,
+        )
 
         user_data = UserData.for_linux(shebang="#!/bin/bash -ex")
 
@@ -163,6 +170,15 @@ class NlbStack(Stack):
             "cd /etc/nginx/nlb.d",
             "/venv/bin/python /nlb/nginx.py",
             "systemctl start nginx",
+        )
+
+        user_data.add_commands(
+            "echo 'Setting up SOCKS proxy'",
+            "useradd pproxy",
+            "cp /nlb/pproxy.service /etc/systemd/system/",
+            "systemctl daemon-reload",
+            "systemctl enable pproxy.service",
+            "systemctl start pproxy.service",
         )
 
         asg = AutoScalingGroup(self, "ASG",
@@ -219,6 +235,12 @@ class NlbStack(Stack):
             description="Lambda to target",
         )
 
+        self.security_group.add_ingress_rule(
+            peer=ecs_source_security_group,
+            connection=Port.udp(8080),
+            description="ECS to target",
+        )
+
         self.create_ecs_lambda(
             cluster=cluster,
             auto_scaling_group=asg,
@@ -260,6 +282,14 @@ class NlbStack(Stack):
         # migration to CNAME the subdomain from the authority nameserver
         # to AWS (as in: www.openttd.org CNAME www.aws.openttd.org)
         self.create_alias(self, "nlb.aws")
+
+        # Create a record for the internal DNS
+        ARecord(self, "APrivateRecord",
+            target=RecordTarget.from_ip_addresses("127.0.0.1"),
+            zone=self.private_zone,
+            record_name=self.subdomain_name,
+            ttl=Duration.seconds(60),
+        )
 
         if g_nlb is not None:
             raise Exception("Only a single NlbStack instance can exist")
@@ -328,6 +358,8 @@ class NlbStack(Stack):
             environment={
                 "DOMAIN_NAME": dns.subdomain_to_fqdn(self.subdomain_name),
                 "HOSTED_ZONE_ID": dns.get_hosted_zone().hosted_zone_id,
+                "PRIVATE_DOMAIN_NAME": f"{self.subdomain_name}.openttd.internal",
+                "PRIVATE_HOSTED_ZONE_ID": self.private_zone.hosted_zone_id,
             },
             vpc=vpc,
             security_groups=[security_group],
@@ -364,6 +396,7 @@ class NlbStack(Stack):
             ],
             resources=[
                 dns.get_hosted_zone().hosted_zone_arn,
+                self.private_zone.hosted_zone_arn,
                 "arn:aws:route53:::change/*",
             ],
         ))

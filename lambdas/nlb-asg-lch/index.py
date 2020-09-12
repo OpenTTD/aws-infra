@@ -10,10 +10,10 @@ client_route53 = boto3.client("route53")
 
 
 def lambda_handler(event, context):
-    print(json.dumps(event))
-
     domain_name = os.environ["DOMAIN_NAME"]
     hosted_zone_id = os.environ["HOSTED_ZONE_ID"]
+    private_domain_name = os.environ["PRIVATE_DOMAIN_NAME"]
+    private_hosted_zone_id = os.environ["PRIVATE_HOSTED_ZONE_ID"]
 
     lifecycle_event = json.loads(event["Records"][0]["Sns"]["Message"])
     instance_id = lifecycle_event.get("EC2InstanceId")
@@ -23,13 +23,20 @@ def lambda_handler(event, context):
 
     print(f"Domain-name: {domain_name}")
     print(f"Hosted-zone-id: {hosted_zone_id}")
+    print(f"Private-domain-name: {private_domain_name}")
+    print(f"Private-hosted-zone-id: {private_hosted_zone_id}")
     print(f"Instance-id: {instance_id}")
     print(f"Lifecycle-transition: {lifecycle_event['LifecycleTransition']}")
 
     if lifecycle_event["LifecycleTransition"] == "autoscaling:EC2_INSTANCE_TERMINATING":
         print("Instance is being terminated; updating Route53 ..")
         update_route53(
-            lifecycle_event["AutoScalingGroupName"], domain_name, hosted_zone_id, ignore_instance_id=instance_id
+            lifecycle_event["AutoScalingGroupName"],
+            domain_name,
+            hosted_zone_id,
+            private_domain_name,
+            private_hosted_zone_id,
+            ignore_instance_id=instance_id,
         )
 
         finish(lifecycle_event)
@@ -52,7 +59,12 @@ def lambda_handler(event, context):
 
         print("Instance online and healthy; updating Route53 ..")
         update_route53(
-            lifecycle_event["AutoScalingGroupName"], domain_name, hosted_zone_id, additional_instance_id=instance_id
+            lifecycle_event["AutoScalingGroupName"],
+            domain_name,
+            hosted_zone_id,
+            private_domain_name,
+            private_hosted_zone_id,
+            additional_instance_id=instance_id,
         )
         return
 
@@ -86,13 +98,19 @@ def pick(dct, *keys):
 
 
 def update_route53(
-    auto_scaling_group_name, domain_name, hosted_zone_id, ignore_instance_id=None, additional_instance_id=None
+    auto_scaling_group_name,
+    domain_name,
+    hosted_zone_id,
+    private_domain_name,
+    private_hosted_zone_id,
+    ignore_instance_id=None,
+    additional_instance_id=None,
 ):
-    ipv4s, ipv6s = get_ips_from_asg(
+    ipv4s, ipv6s, private_ipv4s = get_ips_from_asg(
         auto_scaling_group_name, ignore_instance_id=ignore_instance_id, additional_instance_id=additional_instance_id
     )
 
-    if not ipv4s or not ipv6s:
+    if not ipv4s or not ipv6s or not private_ipv4s:
         print("There were no active instances for this AutoscalingGroup; not updating route53!")
         return
 
@@ -116,6 +134,23 @@ def update_route53(
                         "Type": "AAAA",
                         "TTL": 60,
                         "ResourceRecords": [{"Value": ipv6} for ipv6 in ipv6s],
+                    },
+                },
+            ]
+        },
+    )
+
+    client_route53.change_resource_record_sets(
+        HostedZoneId=private_hosted_zone_id,
+        ChangeBatch={
+            "Changes": [
+                {
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                        "Name": private_domain_name,
+                        "Type": "A",
+                        "TTL": 60,
+                        "ResourceRecords": [{"Value": ipv4} for ipv4 in private_ipv4s],
                     },
                 },
             ]
@@ -146,9 +181,11 @@ def get_ips_from_asg(auto_scaling_group_name, ignore_instance_id=None, additiona
 
     ipv4s = set()
     ipv6s = set()
+    private_ipv4s = set()
     for reserveration in instances["Reservations"]:
         for instance in reserveration["Instances"]:
             ipv4s.add(instance["PublicIpAddress"])
             ipv6s.add(instance["NetworkInterfaces"][0]["Ipv6Addresses"][0]["Ipv6Address"])
+            private_ipv4s.add(instance["PrivateIpAddress"])
 
-    return ipv4s, ipv6s
+    return ipv4s, ipv6s, private_ipv4s

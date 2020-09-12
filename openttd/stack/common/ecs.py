@@ -46,6 +46,12 @@ class EcsStack(Stack):
             allow_all_outbound=False,
         )
 
+        # Only use "source_security_group" to check if flows come from ECS.
+        # Do not use it to allow traffic in ECS; use "security_group" for
+        # that.
+        assert(isinstance(asg.node.children[0], SecurityGroup))
+        self.source_security_group = asg.node.children[0]
+
         # We could also make an additional security-group and add that to
         # the ASG, but it keeps adding up. This makes it a tiny bit
         # easier to get an overview what traffic is allowed from the
