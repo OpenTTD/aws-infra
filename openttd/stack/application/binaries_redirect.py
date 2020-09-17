@@ -41,7 +41,7 @@ class BinariesRedirectStack(Stack):
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
-            image_name="openttd/binaries-redirect",
+            image_name="ghcr.io/openttd/binaries-redirect",
             port=80,
             memory_limit_mib=16,
             desired_count=desired_count,

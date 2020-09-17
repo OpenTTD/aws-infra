@@ -51,7 +51,7 @@ class DorpsgekStack(Stack):
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
-            image_name="openttd/dorpsgek",
+            image_name="ghcr.io/openttd/dorpsgek",
             port=80,
             memory_limit_mib=128,
             desired_count=desired_count,

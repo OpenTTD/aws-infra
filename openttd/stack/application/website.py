@@ -41,7 +41,7 @@ class WebsiteStack(Stack):
             deployment=deployment,
             policy=policy,
             application_name=self.application_name,
-            image_name="openttd/website",
+            image_name="ghcr.io/openttd/website",
             port=80,
             memory_limit_mib=32,
             desired_count=desired_count,
