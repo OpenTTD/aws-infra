@@ -32,6 +32,9 @@ def write_nginx_config(load_balancer):
             fp.write(f"    listen [::]:{port} {protocol_if_not_tcp};\n")
             fp.write(f"    proxy_pass {protocol}{port};\n")
             fp.write(f"    proxy_protocol on;\n")
+            if protocol == "udp":
+                fp.write(f"    proxy_requests 1;\n")
+                fp.write(f"    proxy_timeout 30s;\n")
             fp.write(f"  }}\n")
 
         fp.write(f"}}\n")
