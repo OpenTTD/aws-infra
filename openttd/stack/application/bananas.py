@@ -125,7 +125,7 @@ class BananasApiStack(Stack):
             desired_count = 1
             tus_priority = 140
             priority = 142
-            memory = 128
+            memory = 96
             github_url = "git@github.com:OpenTTD/BaNaNaS-staging.git"
             client_file = "clients-staging.yaml"
 
@@ -211,7 +211,7 @@ class BananasServerStack(Stack):
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
             priority = 44
-            memory = 512
+            memory = 256
             github_url = "https://github.com/OpenTTD/BaNaNaS"
             content_port = 3978
             bootstrap_command = ["--bootstrap-unique-id", "4f474658"]
@@ -316,7 +316,7 @@ class BananasFrontendWebStack(Stack):
             application_name=self.application_name,
             image_name="ghcr.io/openttd/bananas-frontend-web",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=64,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,

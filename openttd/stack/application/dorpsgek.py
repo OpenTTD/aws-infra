@@ -53,7 +53,7 @@ class DorpsgekStack(Stack):
             application_name=self.application_name,
             image_name="ghcr.io/openttd/dorpsgek",
             port=80,
-            memory_limit_mib=128,
+            memory_limit_mib=64,
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
