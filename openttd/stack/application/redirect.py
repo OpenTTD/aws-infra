@@ -25,9 +25,15 @@ from openttd.stack.common import lambda_edge
 class RedirectStack(Stack):
     application_name = "Redirect"
     subdomain_names = [
+        "download",
+        "farm",
+        "forum",
+        "github",
+        "nightly",
         "noai",
         "nogo",
         "proxy.binaries",
+        "security",
     ]
 
     def __init__(self,
@@ -54,7 +60,7 @@ class RedirectStack(Stack):
             func = lambda_edge.create_function(self, f"Redirect-{subdomain_name}-{deployment.value}",
                 runtime=Runtime.NODEJS_10_X,
                 handler="index.handler",
-                code=Code.from_asset(f"./lambdas/domain-redirect-{subdomain_name}"),
+                code=Code.from_asset(f"./lambdas/redirect-{subdomain_name}"),
             )
 
             S3CloudFront(self, f"S3CloudFront-{subdomain_name}",
