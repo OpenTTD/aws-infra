@@ -9,11 +9,13 @@ from aws_cdk.aws_ecs import (
     Ec2TaskDefinition,
     ICluster,
     LogDrivers,
+    MountPoint,
     NetworkMode,
     PortMapping,
     PlacementStrategy,
     Protocol,
     Secret,
+    Volume,
 )
 from typing import (
     List,
@@ -50,7 +52,8 @@ class ECSHTTPSContainer(Construct):
                  allow_via_http: Optional[bool] = False,
                  command: Optional[List[str]] = None,
                  environment: Mapping[str, str] = {},
-                 secrets: Mapping[str, Secret] = {}) -> None:
+                 secrets: Mapping[str, Secret] = {},
+                 volumes: Mapping[str, Volume] = {}) -> None:
         super().__init__(scope, id)
 
         full_application_name = f"{deployment.value}-{application_name}"
@@ -74,6 +77,7 @@ class ECSHTTPSContainer(Construct):
             network_mode=NetworkMode.BRIDGE,
             execution_role=self.task_role,
             task_role=self.task_role,
+            volumes=list(volumes.values()),
         )
 
         self.container = task_definition.add_container("Container",
@@ -84,6 +88,11 @@ class ECSHTTPSContainer(Construct):
             secrets=secrets,
             command=command,
         )
+        self.container.add_mount_points(*[MountPoint(
+            container_path=path,
+            read_only=False,
+            source_volume=volume.name,
+        ) for path, volume in volumes.items()])
 
         self.add_port(
             port=port,

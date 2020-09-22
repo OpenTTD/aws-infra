@@ -23,6 +23,7 @@ from openttd.stack.application.bananas import (
 )
 from openttd.stack.application.docs import DocsStack
 from openttd.stack.application.dorpsgek import DorpsgekStack
+from openttd.stack.application.eints import EintsStack
 from openttd.stack.application.flyspray import FlysprayStack
 from openttd.stack.application.installer import InstallerStack
 from openttd.stack.application.master_server import (
@@ -231,6 +232,16 @@ for deployment in Deployment:
         deployment=deployment,
         env=env,
     )
+
+    if deployment == Deployment.STAGING:
+        eints_policy = PolicyStack(app, f"{prefix}Eints-Policy", env=env).policy
+        EintsStack(app, f"{prefix}Eints",
+            deployment=deployment,
+            policy=eints_policy,
+            cluster=ecs.cluster,
+            vpc=vpc.vpc,
+            env=env,
+        )
 
     if deployment == Deployment.PRODUCTION:
         dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
