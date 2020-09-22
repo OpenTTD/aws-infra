@@ -63,7 +63,7 @@ def fetch_container_mapping(cluster):
 def fetch_active_tasks(cluster, container_mapping):
     load_balancer = defaultdict(set)
 
-    services = client_ecs.list_services(cluster=cluster)
+    services = client_ecs.list_services(cluster=cluster, maxResults=100)
     for service in services["serviceArns"]:
         tags = client_ecs.list_tags_for_resource(resourceArn=service)
         tags = {tag["key"]: tag["value"] for tag in tags["tags"]}
