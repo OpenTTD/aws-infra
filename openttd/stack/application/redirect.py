@@ -4,6 +4,7 @@ from aws_cdk.core import (
     Tags,
 )
 from aws_cdk.aws_cloudfront import (
+    EdgeLambda,
     LambdaEdgeEventType,
     LambdaFunctionAssociation,
 )
@@ -18,6 +19,7 @@ from aws_cdk.aws_s3 import (
 )
 
 from openttd.construct.s3_cloud_front import S3CloudFront
+from openttd.construct.s3_cloud_front_v2 import S3CloudFrontV2
 from openttd.enumeration import Deployment
 from openttd.stack.common import lambda_edge
 
@@ -29,6 +31,7 @@ class RedirectStack(Stack):
         "farm",
         "forum",
         "github",
+        "grfsearch",
         "nightly",
         "noai",
         "nogo",
@@ -57,20 +60,35 @@ class RedirectStack(Stack):
         )
 
         for subdomain_name in self.subdomain_names:
-            func = lambda_edge.create_function(self, f"Redirect-{subdomain_name}-{deployment.value}",
+            func_version = lambda_edge.create_function(self, f"Redirect-{subdomain_name}-{deployment.value}",
                 runtime=Runtime.NODEJS_10_X,
                 handler="index.handler",
                 code=Code.from_asset(f"./lambdas/redirect-{subdomain_name}"),
             )
 
-            S3CloudFront(self, f"S3CloudFront-{subdomain_name}",
-                subdomain_name=subdomain_name,
-                bucket_site=bucket_site,
-                bucket_access_logs=bucket_access_logs,
-                lambda_function_associations=[
-                    LambdaFunctionAssociation(
-                        event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
-                        lambda_function=func,
-                    ),
-                ],
-            )
+            if subdomain_name == "grfsearch":
+                S3CloudFrontV2(self, f"S3CloudFront-{subdomain_name}",
+                    subdomain_name=subdomain_name,
+                    bucket_site=bucket_site,
+                    bucket_access_logs=bucket_access_logs,
+                    edge_lambdas=[
+                        EdgeLambda(
+                            event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                            function_version=func_version,
+                        ),
+                    ],
+                    forward_query_string=True,
+                    forward_query_string_cache_keys=["do", "q"],
+                )
+            else:
+                S3CloudFront(self, f"S3CloudFront-{subdomain_name}",
+                    subdomain_name=subdomain_name,
+                    bucket_site=bucket_site,
+                    bucket_access_logs=bucket_access_logs,
+                    lambda_function_associations=[
+                        LambdaFunctionAssociation(
+                            event_type=LambdaEdgeEventType.ORIGIN_REQUEST,
+                            lambda_function=func_version,
+                        ),
+                    ],
+                )

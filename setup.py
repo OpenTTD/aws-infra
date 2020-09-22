@@ -20,9 +20,10 @@ setuptools.setup(
 
     install_requires=[
         "aws-cdk.aws-certificatemanager",
+        "aws-cdk.aws-cloudfront-origins",
         "aws-cdk.aws-ecs",
         "aws-cdk.aws-elasticloadbalancingv2",
-        "aws_cdk.aws_events_targets",
+        "aws_cdk.aws_events-targets",
         "aws-cdk.aws-logs",
         "aws-cdk.aws-route53",
         "aws-cdk.aws-s3",
