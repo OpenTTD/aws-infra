@@ -91,6 +91,7 @@ class EintsStack(Stack):
         github_org_api_token = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOrgApiToken").parameter
         github_oauth2_client_id = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientId").parameter
         github_oauth2_client_secret = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientSecret").parameter
+        translators_password = parameter_store.add_secure_string(f"/Eints/{deployment.value}/TranslatorsPassword").parameter
         sentry_dsn = parameter_store.add_secure_string(f"/Eints/{deployment.value}/SentryDSN").parameter
 
         ECSHTTPSContainer(self, self.application_name,
@@ -128,6 +129,7 @@ class EintsStack(Stack):
                 "EINTS_GITHUB_ORG_API_TOKEN": Secret.from_ssm_parameter(github_org_api_token),
                 "EINTS_GITHUB_OAUTH2_CLIENT_ID": Secret.from_ssm_parameter(github_oauth2_client_id),
                 "EINTS_GITHUB_OAUTH2_CLIENT_SECRET": Secret.from_ssm_parameter(github_oauth2_client_secret),
+                "EINTS_TRANSLATORS_PASSWORD": Secret.from_ssm_parameter(translators_password),
                 "EINTS_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
             },
             volumes={
