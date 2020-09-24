@@ -233,15 +233,14 @@ for deployment in Deployment:
         env=env,
     )
 
-    if deployment == Deployment.STAGING:
-        eints_policy = PolicyStack(app, f"{prefix}Eints-Policy", env=env).policy
-        EintsStack(app, f"{prefix}Eints",
-            deployment=deployment,
-            policy=eints_policy,
-            cluster=ecs.cluster,
-            vpc=vpc.vpc,
-            env=env,
-        )
+    eints_policy = PolicyStack(app, f"{prefix}Eints-Policy", env=env).policy
+    EintsStack(app, f"{prefix}Eints",
+        deployment=deployment,
+        policy=eints_policy,
+        cluster=ecs.cluster,
+        vpc=vpc.vpc,
+        env=env,
+    )
 
     if deployment == Deployment.PRODUCTION:
         dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy

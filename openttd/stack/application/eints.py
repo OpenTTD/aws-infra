@@ -82,7 +82,7 @@ class EintsStack(Stack):
         if deployment == Deployment.PRODUCTION:
             desired_count = 1  # Currently this pod is stateful, and as such cannot be run more than once
             priority = 70
-            memory = 128
+            memory = 512
         else:
             desired_count = 1
             priority = 170
