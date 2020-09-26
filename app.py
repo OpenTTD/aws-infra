@@ -31,6 +31,7 @@ from openttd.stack.application.master_server import (
     MasterServerApiStack,
     MasterServerWebStack,
 )
+from openttd.stack.application.openttd_com import OpenttdComStack
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.common import dns
@@ -119,6 +120,11 @@ nlb = NlbStack(app, f"{prefix}Nlb",
     cluster=ecs.cluster,
     ecs_security_group=ecs.security_group,
     ecs_source_security_group=ecs.source_security_group,
+    env=env,
+)
+
+OpenttdComStack(app, f"{prefix}OpenttdCom",
+    deployment=Deployment.PRODUCTION,
     env=env,
 )
 

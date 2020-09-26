@@ -46,12 +46,14 @@ class S3CloudFront(Construct):
                  *,
                  subdomain_name: str,
                  additional_fqdns: Optional[List[str]] = None,
+                 cert: Optional[certificate.CertificateResult] = None,
                  error_folder: Optional[str] = None,
                  lambda_function_associations: Optional[List[LambdaFunctionAssociation]] = None,
                  bucket_site: Optional[Bucket] = None,
                  bucket_access_logs: Optional[Bucket] = None,
                  price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
                  viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                 no_dns: Optional[bool] = False,
                  ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
@@ -78,7 +80,8 @@ class S3CloudFront(Construct):
             )
 
         # CloudFront needs everything to be available in us-east-1
-        cert = certificate.add_certificate(subdomain_name, region="us-east-1", additional_fqdns=additional_fqdns)
+        if cert is None:
+            cert = certificate.add_certificate(subdomain_name, region="us-east-1", additional_fqdns=additional_fqdns)
 
         error_configurations = None
         if error_folder:
@@ -116,14 +119,15 @@ class S3CloudFront(Construct):
             viewer_protocol_policy=viewer_protocol_policy,
         )
 
-        ARecord(self, f"{cert.fqdn}-ARecord",
-            fqdn=cert.fqdn,
-            target=CloudFrontTarget(self.distribution),
-        )
-        AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
-            fqdn=cert.fqdn,
-            target=CloudFrontTarget(self.distribution),
-        )
+        if not no_dns:
+            ARecord(self, f"{cert.fqdn}-ARecord",
+                fqdn=cert.fqdn,
+                target=CloudFrontTarget(self.distribution),
+            )
+            AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
+                fqdn=cert.fqdn,
+                target=CloudFrontTarget(self.distribution),
+            )
 
 
 class S3CloudFrontPolicy(Construct):
