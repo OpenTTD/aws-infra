@@ -63,7 +63,7 @@ def subdomain_to_fqdn(subdomain_name: str) -> str:
     if g_domain_name is None:
         raise Exception("No domain name was ever set")
 
-    if subdomain_name == "@":
+    if subdomain_name == "root":
         return g_domain_name
 
     return f"{subdomain_name}.{g_domain_name}"

@@ -28,10 +28,15 @@ class ARecord(Construct):
         # Create a second record under "aws" subdomain. This helps during
         # migration to CNAME the subdomain from the authority nameserver
         # to AWS (as in: www.openttd.org CNAME www.aws.openttd.org)
+        if record_name:
+            record_name = f"{record_name}.aws"
+        else:
+            record_name = "aws"
+
         route53.ARecord(self, f"{id}Alias",
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
-            record_name=f"{record_name}.aws",
+            record_name=record_name
         )
 
 
@@ -58,8 +63,13 @@ class AaaaRecord(Construct):
         # Create a second record under "aws" subdomain. This helps during
         # migration to CNAME the subdomain from the authority nameserver
         # to AWS (as in: www.openttd.org CNAME www.aws.openttd.org)
+        if record_name:
+            record_name = f"{record_name}.aws"
+        else:
+            record_name = "aws"
+
         route53.AaaaRecord(self, f"{id}Alias",
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
-            record_name=f"{record_name}.aws",
+            record_name=record_name,
         )

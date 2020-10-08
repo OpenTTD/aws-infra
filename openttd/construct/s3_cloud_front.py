@@ -37,6 +37,7 @@ from openttd.construct.dns import (
     AaaaRecord,
 )
 from openttd.stack.common import certificate
+from openttd.stack.common.dns import get_hosted_zone_name
 
 
 class S3CloudFront(Construct):

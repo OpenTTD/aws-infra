@@ -36,6 +36,7 @@ class RedirectStack(Stack):
         "noai",
         "nogo",
         "proxy.binaries",
+        "root",
         "security",
     ]
 
