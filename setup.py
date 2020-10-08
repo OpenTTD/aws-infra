@@ -13,7 +13,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
 
-    author="TrueBrain",
+    author="TrueBrain <truebrain@openttd.org>",
 
     package_dir={"": "openttd"},
     packages=setuptools.find_packages(where="openttd"),
