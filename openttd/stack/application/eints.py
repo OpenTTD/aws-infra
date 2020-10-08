@@ -108,6 +108,7 @@ class EintsStack(Stack):
             command=[
                 "--server-host", "0.0.0.0",
                 "--server-port", "80",
+                "--server-mode", "production",
                 "--authentication", "github",
                 "--stable-languages", "stable_languages",
                 "--unstable-languages", "unstable_languages",
