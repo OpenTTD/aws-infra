@@ -47,9 +47,7 @@ class CertificateStack(Stack):
             raise Exception("Only a single CertificateStack instance can exist")
         g_certificate = self
 
-    def add_certificate(
-        self, subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None
-    ) -> CertificateResult:
+    def add_certificate(self, subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
         certificate = DnsValidatedCertificate(
@@ -74,9 +72,7 @@ class CertificateStack(Stack):
         return CertificateResult(certificate, certificate.certificate_arn, fqdn)
 
 
-def add_certificate(
-    subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None
-) -> CertificateResult:
+def add_certificate(subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
     if g_certificate is None:
         raise Exception("No CertificateStack instance exists")
 

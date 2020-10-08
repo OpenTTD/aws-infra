@@ -397,9 +397,7 @@ class NlbStack(Stack):
             f"LH{name}",
             lifecycle_transition=lifecycle_transition,
             notification_target=FunctionHook(lambda_func),
-            default_result=DefaultResult.ABANDON
-            if lifecycle_transition == LifecycleTransition.INSTANCE_LAUNCHING
-            else DefaultResult.CONTINUE,
+            default_result=DefaultResult.ABANDON if lifecycle_transition == LifecycleTransition.INSTANCE_LAUNCHING else DefaultResult.CONTINUE,
             heartbeat_timeout=timeout,
         )
 
@@ -435,9 +433,7 @@ class NlbStack(Stack):
             )
         )
 
-    def add_nlb(
-        self, scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str
-    ) -> None:
+    def add_nlb(self, scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str) -> None:
         port_dict = port.to_rule_json()
         Tags.of(service).add("NLB-protocol", port_dict["ipProtocol"])
         Tags.of(service).add("NLB-port", str(port_dict["fromPort"]))

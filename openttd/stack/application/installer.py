@@ -30,15 +30,7 @@ class InstallerStack(Stack):
     application_name = "Installer"
     subdomain_name = "installer.cdn"
 
-    def __init__(
-        self,
-        scope: Construct,
-        id: str,
-        *,
-        deployment: Deployment,
-        additional_fqdns: Optional[List[str]] = None,
-        **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, additional_fqdns: Optional[List[str]] = None, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)

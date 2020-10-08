@@ -56,18 +56,10 @@ class EintsStack(Stack):
             priority = 170
             memory = 128
 
-        github_org_api_token = parameter_store.add_secure_string(
-            f"/Eints/{deployment.value}/GithubOrgApiToken"
-        ).parameter
-        github_oauth2_client_id = parameter_store.add_secure_string(
-            f"/Eints/{deployment.value}/GithubOauth2ClientId"
-        ).parameter
-        github_oauth2_client_secret = parameter_store.add_secure_string(
-            f"/Eints/{deployment.value}/GithubOauth2ClientSecret"
-        ).parameter
-        translators_password = parameter_store.add_secure_string(
-            f"/Eints/{deployment.value}/TranslatorsPassword"
-        ).parameter
+        github_org_api_token = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOrgApiToken").parameter
+        github_oauth2_client_id = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientId").parameter
+        github_oauth2_client_secret = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientSecret").parameter
+        translators_password = parameter_store.add_secure_string(f"/Eints/{deployment.value}/TranslatorsPassword").parameter
         sentry_dsn = parameter_store.add_secure_string(f"/Eints/{deployment.value}/SentryDSN").parameter
 
         ECSHTTPSContainer(

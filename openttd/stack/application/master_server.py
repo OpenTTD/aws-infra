@@ -26,9 +26,7 @@ class MasterServerApiStack(Stack):
     application_name = "MasterServerApi"
     subdomain_name = "api.master"
 
-    def __init__(
-        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -112,9 +110,7 @@ class MasterServerStack(Stack):
     subdomain_name = "server.master"
     nlb_subdomain_name = "master"
 
-    def __init__(
-        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -207,9 +203,7 @@ class MasterServerWebStack(Stack):
     application_name = "MasterServerWeb"
     subdomain_name = "servers"
 
-    def __init__(
-        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)

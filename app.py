@@ -52,7 +52,7 @@ from openttd.stack.common.vpc import VpcStack
 maturity = Maturity.DEVELOPMENT
 env = {
     "region": "eu-central-1",
-    "account": os.getenv('AWS_ACCOUNT_ID'),
+    "account": os.getenv("AWS_ACCOUNT_ID"),
 }
 hosted_zone_name = "openttd.org"
 

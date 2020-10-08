@@ -140,15 +140,9 @@ class BananasApiStack(Stack):
             client_file = "clients-staging.yaml"
 
         sentry_dsn = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/SentryDSN").parameter
-        user_github_client_id = parameter_store.add_secure_string(
-            f"/BananasApi/{deployment.value}/UserGithubClientId"
-        ).parameter
-        user_github_client_secret = parameter_store.add_secure_string(
-            f"/BananasApi/{deployment.value}/UserGithubClientSecret"
-        ).parameter
-        index_github_private_key = parameter_store.add_secure_string(
-            f"/BananasApi/{deployment.value}/IndexGithubPrivateKey"
-        ).parameter
+        user_github_client_id = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/UserGithubClientId").parameter
+        user_github_client_secret = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/UserGithubClientSecret").parameter
+        index_github_private_key = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/IndexGithubPrivateKey").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/ReloadSecret").parameter
 
         self.container = ECSHTTPSContainer(
@@ -258,6 +252,25 @@ class BananasServerStack(Stack):
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
 
+        command = [
+            "--storage",
+            "s3",
+            "--storage-s3-bucket",
+            bucket.bucket_name,
+            "--index",
+            "github",
+            "--index-github-url",
+            github_url,
+            "--cdn-url",
+            cdn_url,
+            "--bind",
+            "0.0.0.0",
+            "--content-port",
+            str(content_port),
+            "--proxy-protocol",
+        ]
+        command.extend(bootstrap_command)
+
         self.container = ECSHTTPSContainer(
             self,
             self.application_name,
@@ -273,24 +286,7 @@ class BananasServerStack(Stack):
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
-            command=[
-                "--storage",
-                "s3",
-                "--storage-s3-bucket",
-                bucket.bucket_name,
-                "--index",
-                "github",
-                "--index-github-url",
-                github_url,
-                "--cdn-url",
-                cdn_url,
-                "--bind",
-                "0.0.0.0",
-                "--content-port",
-                str(content_port),
-                "--proxy-protocol",
-            ]
-            + bootstrap_command,
+            command=command,
             environment={
                 "BANANAS_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
             },
@@ -321,9 +317,7 @@ class BananasFrontendWebStack(Stack):
     application_name = "BananasFrontendWeb"
     subdomain_name = "bananas"
 
-    def __init__(
-        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)

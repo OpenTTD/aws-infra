@@ -14,9 +14,7 @@ class WebsiteStack(Stack):
     application_name = "Website"
     subdomain_name = "www"
 
-    def __init__(
-        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)

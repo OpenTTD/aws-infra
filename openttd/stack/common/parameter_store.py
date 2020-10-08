@@ -64,13 +64,9 @@ class ParameterStoreStack(Stack):
             raise Exception("Please use a path for a parameter name")
         parameter_name = self.get_parameter_name(name)
 
-        res = ssm_client.describe_parameters(
-            ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [parameter_name]}]
-        )
+        res = ssm_client.describe_parameters(ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [parameter_name]}])
         if not len(res["Parameters"]):
-            print(
-                f"ERROR: create SecureString '{parameter_name}' manually (CloudFormation currently can't create those)"
-            )
+            print(f"ERROR: create SecureString '{parameter_name}' manually (CloudFormation currently can't create those)")
 
         parameter = StringParameter.from_secure_string_parameter_attributes(
             self,

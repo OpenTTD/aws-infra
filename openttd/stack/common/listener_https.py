@@ -182,6 +182,4 @@ def add_targets(
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(
-        subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http
-    )
+    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http)
