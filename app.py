@@ -211,7 +211,7 @@ for deployment in Deployment:
     )
 
     master_server_policy = PolicyStack(app, f"{prefix}MasterServer-Policy", env=env).policy
-    master_server = MasterServerStack(app, f"{prefix}MasterServer",
+    MasterServerStack(app, f"{prefix}MasterServer",
         deployment=deployment,
         policy=master_server_policy,
         cluster=ecs.cluster,
@@ -219,7 +219,7 @@ for deployment in Deployment:
     )
 
     master_server_api_policy = PolicyStack(app, f"{prefix}MasterServerApi-Policy", env=env).policy
-    master_server_api = MasterServerApiStack(app, f"{prefix}MasterServerApi",
+    MasterServerApiStack(app, f"{prefix}MasterServerApi",
         deployment=deployment,
         policy=master_server_api_policy,
         cluster=ecs.cluster,
