@@ -6,20 +6,17 @@ from openttd.stack.common import dns
 
 
 class ARecord(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 fqdn: str,
-                 target) -> None:
+    def __init__(self, scope: Construct, id: str, *, fqdn: str, target) -> None:
         super().__init__(scope, id)
 
         hosted_zone_name = dns.get_hosted_zone_name()
         if not fqdn.endswith(hosted_zone_name):
             raise Exception(f"FQDN {fqdn} not within {hosted_zone_name}")
-        record_name = fqdn[0:-len(hosted_zone_name) - 1]
+        record_name = fqdn[0 : -len(hosted_zone_name) - 1]
 
-        route53.ARecord(self, id,
+        route53.ARecord(
+            self,
+            id,
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
             record_name=record_name,
@@ -33,28 +30,27 @@ class ARecord(Construct):
         else:
             record_name = "aws"
 
-        route53.ARecord(self, f"{id}Alias",
+        route53.ARecord(
+            self,
+            f"{id}Alias",
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
-            record_name=record_name
+            record_name=record_name,
         )
 
 
 class AaaaRecord(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 fqdn: str,
-                 target) -> None:
+    def __init__(self, scope: Construct, id: str, *, fqdn: str, target) -> None:
         super().__init__(scope, id)
 
         hosted_zone_name = dns.get_hosted_zone_name()
         if not fqdn.endswith(hosted_zone_name):
             raise Exception(f"FQDN {fqdn} not within {hosted_zone_name}")
-        record_name = fqdn[0:-len(hosted_zone_name) - 1]
+        record_name = fqdn[0 : -len(hosted_zone_name) - 1]
 
-        route53.AaaaRecord(self, id,
+        route53.AaaaRecord(
+            self,
+            id,
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
             record_name=record_name,
@@ -68,7 +64,9 @@ class AaaaRecord(Construct):
         else:
             record_name = "aws"
 
-        route53.AaaaRecord(self, f"{id}Alias",
+        route53.AaaaRecord(
+            self,
+            f"{id}Alias",
             target=RecordTarget.from_alias(target),
             zone=dns.get_hosted_zone(),
             record_name=record_name,

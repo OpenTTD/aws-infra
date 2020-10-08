@@ -55,25 +55,31 @@ class BananasCdnStack(Stack):
     application_name = "BananasCdn"
     subdomain_name = "bananas.cdn"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 additional_fqdns: Optional[List[str]] = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        deployment: Deployment,
+        additional_fqdns: Optional[List[str]] = None,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
         Tags.of(self).add("Deployment", deployment.value)
 
-        func = lambda_edge.create_function(self, f"BananasCdnRedirect{deployment.value}",
+        func = lambda_edge.create_function(
+            self,
+            f"BananasCdnRedirect{deployment.value}",
             runtime=Runtime.NODEJS_10_X,
             handler="index.handler",
             code=Code.from_asset("./lambdas/bananas-cdn"),
         )
 
-        s3_cloud_front = S3CloudFront(self, "S3CloudFront",
+        s3_cloud_front = S3CloudFront(
+            self,
+            "S3CloudFront",
             subdomain_name=self.subdomain_name,
             error_folder="/errors",
             lambda_function_associations=[
@@ -88,7 +94,9 @@ class BananasCdnStack(Stack):
         )
         self.bucket = s3_cloud_front.bucket_site
 
-        S3CloudFrontPolicy(self, "S3cloudFrontPolicy",
+        S3CloudFrontPolicy(
+            self,
+            "S3cloudFrontPolicy",
             s3_cloud_front=s3_cloud_front,
             with_s3_get_object_access=True,
         )
@@ -98,15 +106,17 @@ class BananasApiStack(Stack):
     application_name = "BananasApi"
     subdomain_name = "api.bananas"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 bucket: Bucket,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        deployment: Deployment,
+        policy: Policy,
+        cluster: ICluster,
+        bucket: Bucket,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -130,12 +140,20 @@ class BananasApiStack(Stack):
             client_file = "clients-staging.yaml"
 
         sentry_dsn = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/SentryDSN").parameter
-        user_github_client_id = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/UserGithubClientId").parameter
-        user_github_client_secret = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/UserGithubClientSecret").parameter
-        index_github_private_key = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/IndexGithubPrivateKey").parameter
+        user_github_client_id = parameter_store.add_secure_string(
+            f"/BananasApi/{deployment.value}/UserGithubClientId"
+        ).parameter
+        user_github_client_secret = parameter_store.add_secure_string(
+            f"/BananasApi/{deployment.value}/UserGithubClientSecret"
+        ).parameter
+        index_github_private_key = parameter_store.add_secure_string(
+            f"/BananasApi/{deployment.value}/IndexGithubPrivateKey"
+        ).parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasApi/{deployment.value}/ReloadSecret").parameter
 
-        self.container = ECSHTTPSContainer(self, self.application_name,
+        self.container = ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
@@ -147,13 +165,20 @@ class BananasApiStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
-                "--storage", "s3",
-                "--storage-s3-bucket", bucket.bucket_name,
-                "--index", "github",
-                "--index-github-url", github_url,
-                "--client-file", client_file,
-                "--user", "github",
-                "--bind", "0.0.0.0",
+                "--storage",
+                "s3",
+                "--storage-s3-bucket",
+                bucket.bucket_name,
+                "--index",
+                "github",
+                "--index-github-url",
+                github_url,
+                "--client-file",
+                client_file,
+                "--user",
+                "github",
+                "--bind",
+                "0.0.0.0",
                 "--behind-proxy",
             ],
             environment={
@@ -175,15 +200,17 @@ class BananasApiStack(Stack):
             path_pattern="/new-package/tus/*",
         )
 
-        self.container.task_role.add_to_policy(PolicyStatement(
-            actions=[
-                "s3:PutObject",
-                "s3:PutObjectAcl",
-            ],
-            resources=[
-                StringConcat().join(bucket.bucket_arn, "/*"),
-            ]
-        ))
+        self.container.task_role.add_to_policy(
+            PolicyStatement(
+                actions=[
+                    "s3:PutObject",
+                    "s3:PutObjectAcl",
+                ],
+                resources=[
+                    StringConcat().join(bucket.bucket_arn, "/*"),
+                ],
+            )
+        )
 
 
 class BananasServerStack(Stack):
@@ -192,15 +219,17 @@ class BananasServerStack(Stack):
     path_pattern = "/bananas"
     nlb_subdomain_name = "content"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 bucket: Bucket,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        deployment: Deployment,
+        policy: Policy,
+        cluster: ICluster,
+        bucket: Bucket,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -229,7 +258,9 @@ class BananasServerStack(Stack):
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
 
-        self.container = ECSHTTPSContainer(self, self.application_name,
+        self.container = ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             path_pattern=self.path_pattern,
             allow_via_http=True,
@@ -243,15 +274,23 @@ class BananasServerStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
-                "--storage", "s3",
-                "--storage-s3-bucket", bucket.bucket_name,
-                "--index", "github",
-                "--index-github-url", github_url,
-                "--cdn-url", cdn_url,
-                "--bind", "0.0.0.0",
-                "--content-port", str(content_port),
+                "--storage",
+                "s3",
+                "--storage-s3-bucket",
+                bucket.bucket_name,
+                "--index",
+                "github",
+                "--index-github-url",
+                github_url,
+                "--cdn-url",
+                cdn_url,
+                "--bind",
+                "0.0.0.0",
+                "--content-port",
+                str(content_port),
                 "--proxy-protocol",
-            ] + bootstrap_command,
+            ]
+            + bootstrap_command,
             environment={
                 "BANANAS_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
             },
@@ -264,30 +303,27 @@ class BananasServerStack(Stack):
         self.container.add_port(content_port)
         nlb.add_nlb(self, self.container.service, Port.tcp(content_port), self.nlb_subdomain_name, "BaNaNaS Server")
 
-        self.container.task_role.add_to_policy(PolicyStatement(
-            actions=[
-                "s3:GetObject",
-                "s3:ListBucket",
-            ],
-            resources=[
-                bucket.bucket_arn,
-                StringConcat().join(bucket.bucket_arn, "/*"),
-            ]
-        ))
+        self.container.task_role.add_to_policy(
+            PolicyStatement(
+                actions=[
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                ],
+                resources=[
+                    bucket.bucket_arn,
+                    StringConcat().join(bucket.bucket_arn, "/*"),
+                ],
+            )
+        )
 
 
 class BananasFrontendWebStack(Stack):
     application_name = "BananasFrontendWeb"
     subdomain_name = "bananas"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -309,7 +345,9 @@ class BananasFrontendWebStack(Stack):
 
         sentry_dsn = parameter_store.add_secure_string(f"/BananasFrontendWeb/{deployment.value}/SentryDSN").parameter
 
-        ECSHTTPSContainer(self, self.application_name,
+        ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
@@ -321,11 +359,15 @@ class BananasFrontendWebStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
-                "--api-url", api_url,
-                "--frontend-url", frontend_url,
+                "--api-url",
+                api_url,
+                "--frontend-url",
+                frontend_url,
                 "run",
-                "-p", "80",
-                "-h", "0.0.0.0",
+                "-p",
+                "80",
+                "-h",
+                "0.0.0.0",
             ],
             environment={
                 "WEBCLIENT_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -339,26 +381,32 @@ class BananasFrontendWebStack(Stack):
 class BananasReload(Stack):
     application_name = "BananasReload"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 vpc: IVpc,
-                 cluster: ICluster,
-                 service: IEc2Service,
-                 ecs_security_group: SecurityGroup,
-                 deployment: Deployment,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        vpc: IVpc,
+        cluster: ICluster,
+        service: IEc2Service,
+        ecs_security_group: SecurityGroup,
+        deployment: Deployment,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
         Tags.of(self).add("Deployment", deployment.value)
 
-        security_group = SecurityGroup(self, "LambdaSG",
+        security_group = SecurityGroup(
+            self,
+            "LambdaSG",
             vpc=vpc,
         )
 
-        lambda_func = Function(self, "ReloadLambda",
+        lambda_func = Function(
+            self,
+            "ReloadLambda",
             code=Code.from_asset("./lambdas/bananas-reload"),
             handler="index.lambda_handler",
             runtime=Runtime.PYTHON_3_8,
@@ -371,27 +419,29 @@ class BananasReload(Stack):
             security_groups=[security_group, ecs_security_group],
             reserved_concurrent_executions=1,
         )
-        lambda_func.add_to_role_policy(PolicyStatement(
-            actions=[
-                "ec2:DescribeInstances",
-                "ecs:DescribeContainerInstances",
-                "ecs:DescribeTasks",
-                "ecs:ListContainerInstances",
-                "ecs:ListServices",
-                "ecs:ListTagsForResource",
-                "ecs:ListTasks",
-            ],
-            resources=[
-                "*",
-            ],
-        ))
+        lambda_func.add_to_role_policy(
+            PolicyStatement(
+                actions=[
+                    "ec2:DescribeInstances",
+                    "ecs:DescribeContainerInstances",
+                    "ecs:DescribeTasks",
+                    "ecs:ListContainerInstances",
+                    "ecs:ListServices",
+                    "ecs:ListTagsForResource",
+                    "ecs:ListTasks",
+                ],
+                resources=[
+                    "*",
+                ],
+            )
+        )
 
         policy = ManagedPolicy(self, "Policy")
-        policy.add_statements(PolicyStatement(
-            actions=[
-                "lambda:InvokeFunction",
-            ],
-            resources=[
-                lambda_func.function_arn
-            ],
-        ))
+        policy.add_statements(
+            PolicyStatement(
+                actions=[
+                    "lambda:InvokeFunction",
+                ],
+                resources=[lambda_func.function_arn],
+            )
+        )

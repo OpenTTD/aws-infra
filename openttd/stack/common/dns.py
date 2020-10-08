@@ -12,12 +12,7 @@ g_domain_name = None  # type: Optional[str]
 
 
 class DnsStack(Stack):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 hosted_zone_name: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, hosted_zone_name: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_hosted_zone, g_hosted_zone_name
@@ -28,7 +23,9 @@ class DnsStack(Stack):
             raise Exception("Only a single DNSStack instance can exist")
 
         g_hosted_zone_name = hosted_zone_name
-        g_hosted_zone = HostedZone.from_lookup(self, "Zone",
+        g_hosted_zone = HostedZone.from_lookup(
+            self,
+            "Zone",
             domain_name=hosted_zone_name,
         )
 

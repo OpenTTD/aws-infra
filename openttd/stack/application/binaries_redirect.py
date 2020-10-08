@@ -14,14 +14,9 @@ class BinariesRedirectStack(Stack):
     application_name = "BinariesRedirect"
     subdomain_name = "binaries"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -36,7 +31,9 @@ class BinariesRedirectStack(Stack):
             desired_count = 1
             priority = 150
 
-        ECSHTTPSContainer(self, self.application_name,
+        ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,

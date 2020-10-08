@@ -17,24 +17,24 @@ from aws_cdk.aws_s3 import (
 
 
 class AlbStack(Stack):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 vpc: IVpc,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, vpc: IVpc, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Stack", "Common-Alb")
 
-        self._alb = ApplicationLoadBalancer(self, "ALB",
+        self._alb = ApplicationLoadBalancer(
+            self,
+            "ALB",
             vpc=vpc,
             internet_facing=True,
             ip_address_type=IpAddressType.DUAL_STACK,
         )
 
-        logs_bucket = Bucket(self, "AccessLogs",
-           encryption=BucketEncryption.S3_MANAGED,
-           block_public_access=BlockPublicAccess.BLOCK_ALL,
+        logs_bucket = Bucket(
+            self,
+            "AccessLogs",
+            encryption=BucketEncryption.S3_MANAGED,
+            block_public_access=BlockPublicAccess.BLOCK_ALL,
         )
         self._alb.log_access_logs(logs_bucket)
 

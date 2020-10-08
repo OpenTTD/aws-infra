@@ -33,27 +33,29 @@ from openttd.stack.common import (
 
 
 class ECSHTTPSContainer(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 subdomain_name: str,
-                 deployment: Deployment,
-                 policy: Policy,
-                 application_name: str,
-                 image_name: str,
-                 port: int,
-                 memory_limit_mib: int,
-                 desired_count: int,
-                 cluster: ICluster,
-                 priority: int,
-                 path_pattern: Optional[str] = None,
-                 health_check_grace_period: Optional[Duration] = None,
-                 allow_via_http: Optional[bool] = False,
-                 command: Optional[List[str]] = None,
-                 environment: Mapping[str, str] = {},
-                 secrets: Mapping[str, Secret] = {},
-                 volumes: Mapping[str, Volume] = {}) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        subdomain_name: str,
+        deployment: Deployment,
+        policy: Policy,
+        application_name: str,
+        image_name: str,
+        port: int,
+        memory_limit_mib: int,
+        desired_count: int,
+        cluster: ICluster,
+        priority: int,
+        path_pattern: Optional[str] = None,
+        health_check_grace_period: Optional[Duration] = None,
+        allow_via_http: Optional[bool] = False,
+        command: Optional[List[str]] = None,
+        environment: Mapping[str, str] = {},
+        secrets: Mapping[str, Secret] = {},
+        volumes: Mapping[str, Volume] = {},
+    ) -> None:
         super().__init__(scope, id)
 
         full_application_name = f"{deployment.value}-{application_name}"
@@ -67,20 +69,25 @@ class ECSHTTPSContainer(Construct):
             log_group=log_group,
         )
 
-        image = ImageFromParameterStore(self, "ImageName",
+        image = ImageFromParameterStore(
+            self,
+            "ImageName",
             parameter_name=f"/Version/{deployment.value}/{application_name}",
             image_name=image_name,
             policy=policy,
         )
 
-        task_definition = Ec2TaskDefinition(self, "TaskDef",
+        task_definition = Ec2TaskDefinition(
+            self,
+            "TaskDef",
             network_mode=NetworkMode.BRIDGE,
             execution_role=self.task_role,
             task_role=self.task_role,
             volumes=list(volumes.values()),
         )
 
-        self.container = task_definition.add_container("Container",
+        self.container = task_definition.add_container(
+            "Container",
             image=ContainerImage.from_registry(image.image_ref),
             memory_limit_mib=memory_limit_mib,
             logging=logging,
@@ -88,17 +95,24 @@ class ECSHTTPSContainer(Construct):
             secrets=secrets,
             command=command,
         )
-        self.container.add_mount_points(*[MountPoint(
-            container_path=path,
-            read_only=False,
-            source_volume=volume.name,
-        ) for path, volume in volumes.items()])
+        self.container.add_mount_points(
+            *[
+                MountPoint(
+                    container_path=path,
+                    read_only=False,
+                    source_volume=volume.name,
+                )
+                for path, volume in volumes.items()
+            ]
+        )
 
         self.add_port(
             port=port,
         )
 
-        self.service = Ec2Service(self, "Service",
+        self.service = Ec2Service(
+            self,
+            "Service",
             cluster=cluster,
             task_definition=task_definition,
             desired_count=desired_count,
@@ -124,27 +138,31 @@ class ECSHTTPSContainer(Construct):
         for security_group in cluster.connections.security_groups:
             self.service.connections.add_security_group(security_group)
 
-    def add_port(self,
-                 port: int):
-        self.container.add_port_mappings(PortMapping(
-            container_port=port,
-            protocol=Protocol.TCP,
-        ))
+    def add_port(self, port: int):
+        self.container.add_port_mappings(
+            PortMapping(
+                container_port=port,
+                protocol=Protocol.TCP,
+            )
+        )
 
-    def add_udp_port(self,
-                 port: int):
-        self.container.add_port_mappings(PortMapping(
-            container_port=port,
-            protocol=Protocol.UDP,
-        ))
+    def add_udp_port(self, port: int):
+        self.container.add_port_mappings(
+            PortMapping(
+                container_port=port,
+                protocol=Protocol.UDP,
+            )
+        )
 
-    def add_target(self,
-                   subdomain_name: str,
-                   port: int,
-                   priority: int,
-                   *,
-                   path_pattern: Optional[str] = None,
-                   allow_via_http: Optional[bool] = False) -> None:
+    def add_target(
+        self,
+        subdomain_name: str,
+        port: int,
+        priority: int,
+        *,
+        path_pattern: Optional[str] = None,
+        allow_via_http: Optional[bool] = False,
+    ) -> None:
         listener_https.add_targets(
             subdomain_name=subdomain_name,
             port=port,

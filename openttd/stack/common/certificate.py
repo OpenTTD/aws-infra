@@ -34,10 +34,7 @@ class CertificateStack(Stack):
     stacks without having to worry about Certificates.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_certificate
@@ -50,13 +47,14 @@ class CertificateStack(Stack):
             raise Exception("Only a single CertificateStack instance can exist")
         g_certificate = self
 
-    def add_certificate(self,
-                        subdomain_name: str,
-                        region: Optional[str] = None,
-                        additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
+    def add_certificate(
+        self, subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None
+    ) -> CertificateResult:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
-        certificate = DnsValidatedCertificate(self, f"{fqdn}-Certificate",
+        certificate = DnsValidatedCertificate(
+            self,
+            f"{fqdn}-Certificate",
             hosted_zone=dns.get_hosted_zone(),
             domain_name=fqdn,
             subject_alternative_names=additional_fqdns,
@@ -76,9 +74,9 @@ class CertificateStack(Stack):
         return CertificateResult(certificate, certificate.certificate_arn, fqdn)
 
 
-def add_certificate(subdomain_name: str,
-                    region: Optional[str] = None,
-                    additional_fqdns: Optional[List[str]] = None) -> CertificateResult:
+def add_certificate(
+    subdomain_name: str, region: Optional[str] = None, additional_fqdns: Optional[List[str]] = None
+) -> CertificateResult:
     if g_certificate is None:
         raise Exception("No CertificateStack instance exists")
 

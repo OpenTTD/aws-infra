@@ -29,12 +29,7 @@ class ParameterStoreStack(Stack):
     have to exist before a stack can be created.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 maturity: Maturity,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, maturity: Maturity, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_parameter_store
@@ -55,7 +50,9 @@ class ParameterStoreStack(Stack):
             raise Exception("Please use a path for a parameter name")
         parameter_name = self.get_parameter_name(name)
 
-        parameter = StringParameter(self, parameter_name,
+        parameter = StringParameter(
+            self,
+            parameter_name,
             string_value=default,
             parameter_name=parameter_name,
         )
@@ -67,11 +64,17 @@ class ParameterStoreStack(Stack):
             raise Exception("Please use a path for a parameter name")
         parameter_name = self.get_parameter_name(name)
 
-        res = ssm_client.describe_parameters(ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [parameter_name]}])
+        res = ssm_client.describe_parameters(
+            ParameterFilters=[{"Key": "Name", "Option": "Equals", "Values": [parameter_name]}]
+        )
         if not len(res["Parameters"]):
-            print(f"ERROR: create SecureString '{parameter_name}' manually (CloudFormation currently can't create those)")
+            print(
+                f"ERROR: create SecureString '{parameter_name}' manually (CloudFormation currently can't create those)"
+            )
 
-        parameter = StringParameter.from_secure_string_parameter_attributes(self, parameter_name,
+        parameter = StringParameter.from_secure_string_parameter_attributes(
+            self,
+            parameter_name,
             parameter_name=parameter_name,
             # 'version' is just a dummny value, as in our usage we only care
             # about the ASN (which is identical for every version).

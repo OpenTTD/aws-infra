@@ -37,25 +37,25 @@ from openttd.construct.dns import (
     AaaaRecord,
 )
 from openttd.stack.common import certificate
-from openttd.stack.common.dns import get_hosted_zone_name
 
 
 class S3CloudFront(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 subdomain_name: str,
-                 additional_fqdns: Optional[List[str]] = None,
-                 cert: Optional[certificate.CertificateResult] = None,
-                 error_folder: Optional[str] = None,
-                 lambda_function_associations: Optional[List[LambdaFunctionAssociation]] = None,
-                 bucket_site: Optional[Bucket] = None,
-                 bucket_access_logs: Optional[Bucket] = None,
-                 price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
-                 viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                 no_dns: Optional[bool] = False,
-                 ) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        subdomain_name: str,
+        additional_fqdns: Optional[List[str]] = None,
+        cert: Optional[certificate.CertificateResult] = None,
+        error_folder: Optional[str] = None,
+        lambda_function_associations: Optional[List[LambdaFunctionAssociation]] = None,
+        bucket_site: Optional[Bucket] = None,
+        bucket_access_logs: Optional[Bucket] = None,
+        price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
+        viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        no_dns: Optional[bool] = False,
+    ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
 
@@ -64,18 +64,24 @@ class S3CloudFront(Construct):
 
         # We restrict access to the S3 as much as possible; in result, we need
         # an OAI, so CloudFront can connect to it.
-        oai = OriginAccessIdentity(self, "OAI",
+        oai = OriginAccessIdentity(
+            self,
+            "OAI",
             comment=f"OAI for {subdomain_name}",
         )
 
         if not self.bucket_site:
-            self.bucket_site = Bucket(self, "Site",
+            self.bucket_site = Bucket(
+                self,
+                "Site",
                 block_public_access=BlockPublicAccess.BLOCK_ALL,
             )
         self.bucket_site.grant_read(oai)
 
         if not bucket_access_logs:
-            bucket_access_logs = Bucket(self, "AccessLogs",
+            bucket_access_logs = Bucket(
+                self,
+                "AccessLogs",
                 encryption=BucketEncryption.S3_MANAGED,
                 block_public_access=BlockPublicAccess.BLOCK_ALL,
             )
@@ -94,19 +100,23 @@ class S3CloudFront(Construct):
                 ),
             ]
 
-        self.distribution = CloudFrontWebDistribution(self, "CloudFront",
-            origin_configs=[SourceConfiguration(
-                s3_origin_source=S3OriginConfig(
-                    s3_bucket_source=self.bucket_site,
-                    origin_access_identity=oai,
-                ),
-                behaviors=[
-                    Behavior(
-                        is_default_behavior=True,
-                        lambda_function_associations=lambda_function_associations,
-                    )
-                ]
-            )],
+        self.distribution = CloudFrontWebDistribution(
+            self,
+            "CloudFront",
+            origin_configs=[
+                SourceConfiguration(
+                    s3_origin_source=S3OriginConfig(
+                        s3_bucket_source=self.bucket_site,
+                        origin_access_identity=oai,
+                    ),
+                    behaviors=[
+                        Behavior(
+                            is_default_behavior=True,
+                            lambda_function_associations=lambda_function_associations,
+                        )
+                    ],
+                )
+            ],
             enable_ip_v6=True,
             error_configurations=error_configurations,
             price_class=price_class,
@@ -121,24 +131,29 @@ class S3CloudFront(Construct):
         )
 
         if not no_dns:
-            ARecord(self, f"{cert.fqdn}-ARecord",
+            ARecord(
+                self,
+                f"{cert.fqdn}-ARecord",
                 fqdn=cert.fqdn,
                 target=CloudFrontTarget(self.distribution),
             )
-            AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
+            AaaaRecord(
+                self,
+                f"{cert.fqdn}-AaaaRecord",
                 fqdn=cert.fqdn,
                 target=CloudFrontTarget(self.distribution),
             )
 
 
 class S3CloudFrontPolicy(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 s3_cloud_front: S3CloudFront,
-                 with_s3_get_object_access: bool = False,
-                 ) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        s3_cloud_front: S3CloudFront,
+        with_s3_get_object_access: bool = False,
+    ) -> None:
         super().__init__(scope, id)
 
         actions = [
@@ -152,23 +167,30 @@ class S3CloudFrontPolicy(Construct):
             actions.append("s3:GetObject")
 
         policy = ManagedPolicy(self, "Policy")
-        policy.add_statements(PolicyStatement(
-            actions=actions,
-            resources=[
-                s3_cloud_front.bucket_site.bucket_arn,
-                StringConcat().join(s3_cloud_front.bucket_site.bucket_arn, "/*")
-            ],
-        ))
-        policy.add_statements(PolicyStatement(
-            actions=[
-                "cloudfront:CreateInvalidation",
-            ],
-            resources=[
-                Arn.format(ArnComponents(
-                    resource="distribution",
-                    service="cloudfront",
-                    region="",
-                    resource_name=s3_cloud_front.distribution.distribution_id,
-                ), self.node.scope),
-            ],
-        ))
+        policy.add_statements(
+            PolicyStatement(
+                actions=actions,
+                resources=[
+                    s3_cloud_front.bucket_site.bucket_arn,
+                    StringConcat().join(s3_cloud_front.bucket_site.bucket_arn, "/*"),
+                ],
+            )
+        )
+        policy.add_statements(
+            PolicyStatement(
+                actions=[
+                    "cloudfront:CreateInvalidation",
+                ],
+                resources=[
+                    Arn.format(
+                        ArnComponents(
+                            resource="distribution",
+                            service="cloudfront",
+                            region="",
+                            resource_name=s3_cloud_front.distribution.distribution_id,
+                        ),
+                        self.node.scope,
+                    ),
+                ],
+            )
+        )

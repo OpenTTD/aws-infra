@@ -18,20 +18,20 @@ from aws_cdk.aws_ec2 import (
 
 
 class EcsStack(Stack):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 vpc: IVpc,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, vpc: IVpc, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Stack", "Common-Ecs")
 
-        self._cluster = Cluster(self, "Cluster",
+        self._cluster = Cluster(
+            self,
+            "Cluster",
             vpc=vpc,
         )
 
-        asg = AutoScalingGroup(self, "ClusterASG",
+        asg = AutoScalingGroup(
+            self,
+            "ClusterASG",
             vpc=vpc,
             instance_type=InstanceType("t3a.small"),
             machine_image=EcsOptimizedImage.amazon_linux2(),
@@ -41,7 +41,9 @@ class EcsStack(Stack):
 
         # Create a SecurityGroup that the NLB can use to allow traffic from
         # NLB to us. This avoids a cyclic dependency.
-        self.security_group = SecurityGroup(self, "SecurityGroup",
+        self.security_group = SecurityGroup(
+            self,
+            "SecurityGroup",
             vpc=vpc,
             allow_all_outbound=False,
         )
@@ -49,7 +51,7 @@ class EcsStack(Stack):
         # Only use "source_security_group" to check if flows come from ECS.
         # Do not use it to allow traffic in ECS; use "security_group" for
         # that.
-        assert(isinstance(asg.node.children[0], SecurityGroup))
+        assert isinstance(asg.node.children[0], SecurityGroup)
         self.source_security_group = asg.node.children[0]
 
         # We could also make an additional security-group and add that to

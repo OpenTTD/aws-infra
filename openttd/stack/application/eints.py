@@ -1,72 +1,38 @@
 from aws_cdk.core import (
     Construct,
-    Duration,
     Stack,
-    StringConcat,
     Tags,
-)
-from aws_cdk.aws_cloudfront import (
-    LambdaEdgeEventType,
-    LambdaFunctionAssociation,
-    PriceClass,
-    ViewerProtocolPolicy,
 )
 from aws_cdk.aws_ecs import (
     EfsVolumeConfiguration,
     ICluster,
-    IEc2Service,
     Secret,
     Volume,
 )
-from aws_cdk.aws_ec2 import (
-    IVpc,
-    Port,
-    SecurityGroup,
-)
+from aws_cdk.aws_ec2 import IVpc
 from aws_cdk.aws_efs import FileSystem
-from aws_cdk.aws_iam import (
-    ManagedPolicy,
-    PolicyStatement,
-)
-from aws_cdk.aws_lambda import (
-    Code,
-    Function,
-    Runtime,
-)
-from aws_cdk.aws_s3 import Bucket
-from typing import (
-    List,
-    Optional,
-)
 
 from openttd.construct.ecs_https_container import ECSHTTPSContainer
 from openttd.construct.policy import Policy
-from openttd.construct.s3_cloud_front import (
-    S3CloudFront,
-    S3CloudFrontPolicy,
-)
 from openttd.enumeration import Deployment
-from openttd.stack.common import (
-    dns,
-    lambda_edge,
-    nlb_self as nlb,
-    parameter_store,
-)
+from openttd.stack.common import parameter_store
 
 
 class EintsStack(Stack):
     application_name = "Eints"
     subdomain_name = "translator"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 vpc: IVpc,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        deployment: Deployment,
+        policy: Policy,
+        cluster: ICluster,
+        vpc: IVpc,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -74,7 +40,9 @@ class EintsStack(Stack):
 
         policy.add_stack(self)
 
-        efs = FileSystem(self, "EintsEFS",
+        efs = FileSystem(
+            self,
+            "EintsEFS",
             vpc=vpc,
         )
         efs.connections.allow_default_port_from(cluster)
@@ -88,13 +56,23 @@ class EintsStack(Stack):
             priority = 170
             memory = 128
 
-        github_org_api_token = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOrgApiToken").parameter
-        github_oauth2_client_id = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientId").parameter
-        github_oauth2_client_secret = parameter_store.add_secure_string(f"/Eints/{deployment.value}/GithubOauth2ClientSecret").parameter
-        translators_password = parameter_store.add_secure_string(f"/Eints/{deployment.value}/TranslatorsPassword").parameter
+        github_org_api_token = parameter_store.add_secure_string(
+            f"/Eints/{deployment.value}/GithubOrgApiToken"
+        ).parameter
+        github_oauth2_client_id = parameter_store.add_secure_string(
+            f"/Eints/{deployment.value}/GithubOauth2ClientId"
+        ).parameter
+        github_oauth2_client_secret = parameter_store.add_secure_string(
+            f"/Eints/{deployment.value}/GithubOauth2ClientSecret"
+        ).parameter
+        translators_password = parameter_store.add_secure_string(
+            f"/Eints/{deployment.value}/TranslatorsPassword"
+        ).parameter
         sentry_dsn = parameter_store.add_secure_string(f"/Eints/{deployment.value}/SentryDSN").parameter
 
-        ECSHTTPSContainer(self, self.application_name,
+        ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
@@ -106,22 +84,38 @@ class EintsStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
-                "--server-host", "0.0.0.0",
-                "--server-port", "80",
-                "--server-mode", "production",
-                "--authentication", "github",
-                "--stable-languages", "stable_languages",
-                "--unstable-languages", "unstable_languages",
-                "--project-cache", "1",
-                "--project-types", "openttd",
-                "--storage-format", "split-languages",
-                "--data-format", "json",
-                "--language-file-size", "10000000",
-                "--num-backup-files", "1",
-                "--max-num-changes", "5",
-                "--min-num-changes", "2",
-                "--change-stable-age", "600",
-                "--github-organization", "OpenTTD",
+                "--server-host",
+                "0.0.0.0",
+                "--server-port",
+                "80",
+                "--server-mode",
+                "production",
+                "--authentication",
+                "github",
+                "--stable-languages",
+                "stable_languages",
+                "--unstable-languages",
+                "unstable_languages",
+                "--project-cache",
+                "1",
+                "--project-types",
+                "openttd",
+                "--storage-format",
+                "split-languages",
+                "--data-format",
+                "json",
+                "--language-file-size",
+                "10000000",
+                "--num-backup-files",
+                "1",
+                "--max-num-changes",
+                "5",
+                "--min-num-changes",
+                "2",
+                "--change-stable-age",
+                "600",
+                "--github-organization",
+                "OpenTTD",
             ],
             environment={
                 "EINTS_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -134,10 +128,11 @@ class EintsStack(Stack):
                 "EINTS_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
             },
             volumes={
-                "/data": Volume(name="data",
-                                efs_volume_configuration=EfsVolumeConfiguration(
-                                    file_system_id=efs.file_system_id,
-                                )
+                "/data": Volume(
+                    name="data",
+                    efs_volume_configuration=EfsVolumeConfiguration(
+                        file_system_id=efs.file_system_id,
+                    ),
                 )
             },
         )

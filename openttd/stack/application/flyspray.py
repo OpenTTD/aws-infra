@@ -24,24 +24,23 @@ class FlysprayStack(Stack):
     application_name = "Flyspray"
     subdomain_name = "bugs"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
         Tags.of(self).add("Deployment", deployment.value)
 
-        func = lambda_edge.create_function(self, f"Flyspray{deployment.value}IndexRedirect",
+        func = lambda_edge.create_function(
+            self,
+            f"Flyspray{deployment.value}IndexRedirect",
             runtime=Runtime.NODEJS_10_X,
             handler="index.handler",
             code=Code.from_asset("./lambdas/flyspray-redirect"),
         )
 
-        s3_cloud_front = S3CloudFront(self, "S3CloudFront",
+        s3_cloud_front = S3CloudFront(
+            self,
+            "S3CloudFront",
             subdomain_name=self.subdomain_name,
             error_folder="/errors",
             lambda_function_associations=[
@@ -52,6 +51,8 @@ class FlysprayStack(Stack):
             ],
         )
 
-        S3CloudFrontPolicy(self, "S3cloudFrontPolicy",
+        S3CloudFrontPolicy(
+            self,
+            "S3cloudFrontPolicy",
             s3_cloud_front=s3_cloud_front,
         )

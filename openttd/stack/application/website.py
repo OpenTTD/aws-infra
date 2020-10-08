@@ -14,14 +14,9 @@ class WebsiteStack(Stack):
     application_name = "Website"
     subdomain_name = "www"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -36,7 +31,9 @@ class WebsiteStack(Stack):
             desired_count = 1
             priority = 110
 
-        ECSHTTPSContainer(self, self.application_name,
+        ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,
@@ -47,4 +44,4 @@ class WebsiteStack(Stack):
             desired_count=desired_count,
             cluster=cluster,
             priority=priority,
-            )
+        )

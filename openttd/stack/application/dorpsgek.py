@@ -18,14 +18,9 @@ class DorpsgekStack(Stack):
     application_name = "Dorpsgek"
     subdomain_name = "dorpsgek"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 deployment: Deployment,
-                 policy: Policy,
-                 cluster: ICluster,
-                 **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -46,7 +41,9 @@ class DorpsgekStack(Stack):
         github_app_private_key = parameter_store.add_secure_string("/Dorpsgek/GithubAppPrivateKey").parameter
         github_app_secret = parameter_store.add_secure_string("/Dorpsgek/GithubAppSecret").parameter
 
-        ECSHTTPSContainer(self, self.application_name,
+        ECSHTTPSContainer(
+            self,
+            self.application_name,
             subdomain_name=self.subdomain_name,
             deployment=deployment,
             policy=policy,

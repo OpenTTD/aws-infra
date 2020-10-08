@@ -15,9 +15,7 @@ from aws_cdk.aws_ssm import IParameter
 
 
 class Policy(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str) -> None:
+    def __init__(self, scope: Construct, id: str) -> None:
         super().__init__(scope, id)
 
         policy = ManagedPolicy(self, "Policy")

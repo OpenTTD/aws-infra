@@ -38,12 +38,7 @@ class LambdaEdgeFunction(AwsCustomResource):
     CustomResource to lookup the ARN of a lambda@edge function.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 parameter_name: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, parameter_name: str, **kwargs) -> None:
         kwargs["on_update"] = self._get_on_update_func(id, parameter_name)
         super().__init__(scope, id, **kwargs)
 
@@ -73,17 +68,16 @@ class LambdaEdgeStack(Stack):
     and use it.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_lambda_edge
 
         Tags.of(self).add("Stack", "Common-Lambda-Edge")
 
-        self._role = Role(self, "EdgeLambdaRole",
+        self._role = Role(
+            self,
+            "EdgeLambdaRole",
             assumed_by=CompositePrincipal(
                 ServicePrincipal("lambda.amazonaws.com"),
                 ServicePrincipal("edgelambda.amazonaws.com"),
@@ -97,14 +91,10 @@ class LambdaEdgeStack(Stack):
             raise Exception("Only a single LambdaEdgeStack instance can exist")
         g_lambda_edge = self
 
-    def create_function(self,
-                        other_stack: Stack,
-                        id,
-                        *,
-                        code: AssetCode,
-                        handler: str,
-                        runtime: Runtime) -> IVersion:
-        func = Function(self, id,
+    def create_function(self, other_stack: Stack, id, *, code: AssetCode, handler: str, runtime: Runtime) -> IVersion:
+        func = Function(
+            self,
+            id,
             code=code,
             handler=handler,
             runtime=runtime,
@@ -121,18 +111,25 @@ class LambdaEdgeStack(Stack):
 
         # Create an entry in the parameter-store that tells the arn of this lambda
         parameter_name = parameter_store.get_parameter_name(f"/LambdaEdge/{id}")
-        StringParameter(self, parameter_name,
-            string_value=Fn.join(":", [
-                func.function_arn,
-                version.version,
-            ]),
+        StringParameter(
+            self,
+            parameter_name,
+            string_value=Fn.join(
+                ":",
+                [
+                    func.function_arn,
+                    version.version,
+                ],
+            ),
             parameter_name=parameter_name,
         )
 
         other_stack.add_dependency(self)
 
         # Create a custom resource that fetches the arn of the lambda
-        cross_region_func = LambdaEdgeFunction(other_stack, f"LambdaEdgeFunction-{sha256}",
+        cross_region_func = LambdaEdgeFunction(
+            other_stack,
+            f"LambdaEdgeFunction-{sha256}",
             parameter_name=parameter_name,
             policy=AwsCustomResourcePolicy.from_sdk_calls(resources=AwsCustomResourcePolicy.ANY_RESOURCE),
         )
@@ -144,7 +141,9 @@ def create_function(other_stack: Stack, id, *, code: AssetCode, handler: str, ru
     if g_lambda_edge is None:
         raise Exception("No LambdaEdgeStack instance exists")
 
-    return g_lambda_edge.create_function(other_stack, id,
+    return g_lambda_edge.create_function(
+        other_stack,
+        id,
         code=code,
         handler=handler,
         runtime=runtime,

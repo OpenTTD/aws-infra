@@ -25,10 +25,7 @@ class TasksStack(Stack):
     privileges, allowing them to deploy in an automated fashion.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_tasks
@@ -43,7 +40,9 @@ class TasksStack(Stack):
         return LogGroup(self, f"LogGroup-{name}")
 
     def add_role(self, name: str) -> Role:
-        return Role(self, f"Role-{name}",
+        return Role(
+            self,
+            f"Role-{name}",
             assumed_by=ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 

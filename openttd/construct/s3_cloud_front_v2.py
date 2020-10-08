@@ -1,31 +1,13 @@
-from aws_cdk.core import (
-    Arn,
-    ArnComponents,
-    Construct,
-    StringConcat,
-)
+from aws_cdk.core import Construct
 from aws_cdk.aws_cloudfront import (
-    Behavior,
     BehaviorOptions,
-    CfnDistribution,
-    CloudFrontWebDistribution,
     Distribution,
     EdgeLambda,
     ErrorResponse,
-    LambdaFunctionAssociation,
-    LoggingConfiguration,
-    OriginAccessIdentity,
     PriceClass,
-    SourceConfiguration,
-    S3OriginConfig,
-    ViewerCertificate,
     ViewerProtocolPolicy,
 )
 from aws_cdk.aws_cloudfront_origins import S3Origin
-from aws_cdk.aws_iam import (
-    ManagedPolicy,
-    PolicyStatement,
-)
 from aws_cdk.aws_route53_targets import CloudFrontTarget
 from aws_cdk.aws_s3 import (
     BlockPublicAccess,
@@ -45,21 +27,22 @@ from openttd.stack.common import certificate
 
 
 class S3CloudFrontV2(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 subdomain_name: str,
-                 additional_fqdns: Optional[List[str]] = None,
-                 error_folder: Optional[str] = None,
-                 forward_query_string: Optional[bool] = None,
-                 forward_query_string_cache_keys: Optional[List[str]] = None,
-                 edge_lambdas: Optional[List[EdgeLambda]] = None,
-                 bucket_site: Optional[Bucket] = None,
-                 bucket_access_logs: Optional[Bucket] = None,
-                 price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
-                 viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                 ) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        *,
+        subdomain_name: str,
+        additional_fqdns: Optional[List[str]] = None,
+        error_folder: Optional[str] = None,
+        forward_query_string: Optional[bool] = None,
+        forward_query_string_cache_keys: Optional[List[str]] = None,
+        edge_lambdas: Optional[List[EdgeLambda]] = None,
+        bucket_site: Optional[Bucket] = None,
+        bucket_access_logs: Optional[Bucket] = None,
+        price_class: Optional[PriceClass] = PriceClass.PRICE_CLASS_100,
+        viewer_protocol_policy: Optional[ViewerProtocolPolicy] = ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+    ) -> None:
         super().__init__(scope, id)
         self.bucket_site = bucket_site
 
@@ -67,12 +50,16 @@ class S3CloudFrontV2(Construct):
             additional_fqdns = []
 
         if not self.bucket_site:
-            self.bucket_site = Bucket(self, "Site",
+            self.bucket_site = Bucket(
+                self,
+                "Site",
                 block_public_access=BlockPublicAccess.BLOCK_ALL,
             )
 
         if not bucket_access_logs:
-            bucket_access_logs = Bucket(self, "AccessLogs",
+            bucket_access_logs = Bucket(
+                self,
+                "AccessLogs",
                 encryption=BucketEncryption.S3_MANAGED,
                 block_public_access=BlockPublicAccess.BLOCK_ALL,
             )
@@ -90,7 +77,9 @@ class S3CloudFrontV2(Construct):
                 )
             ]
 
-        self.distribution = Distribution(self, "CloudFront",
+        self.distribution = Distribution(
+            self,
+            "CloudFront",
             default_behavior=BehaviorOptions(
                 origin=S3Origin(
                     bucket=self.bucket_site,
@@ -109,11 +98,15 @@ class S3CloudFrontV2(Construct):
             error_responses=error_responses,
         )
 
-        ARecord(self, f"{cert.fqdn}-ARecord",
+        ARecord(
+            self,
+            f"{cert.fqdn}-ARecord",
             fqdn=cert.fqdn,
             target=CloudFrontTarget(self.distribution),
         )
-        AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
+        AaaaRecord(
+            self,
+            f"{cert.fqdn}-AaaaRecord",
             fqdn=cert.fqdn,
             target=CloudFrontTarget(self.distribution),
         )

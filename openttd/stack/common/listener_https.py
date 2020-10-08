@@ -36,12 +36,7 @@ class ListenerHttpsStack(Stack):
     single stack.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 alb: IApplicationLoadBalancer,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, alb: IApplicationLoadBalancer, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_listener_https
@@ -52,7 +47,9 @@ class ListenerHttpsStack(Stack):
         self._subdomains_cert = {}
 
         self._alb = alb
-        self._listener = ApplicationListener(self, "Listener-Https",
+        self._listener = ApplicationListener(
+            self,
+            "Listener-Https",
             load_balancer=alb,
             port=443,
             protocol=ApplicationProtocol.HTTPS,
@@ -63,13 +60,16 @@ class ListenerHttpsStack(Stack):
             description="Allow from anyone on port 443",
         )
         # Make sure there is always a backend picking up, even if we don't know the host
-        self._listener.add_fixed_response("default",
+        self._listener.add_fixed_response(
+            "default",
             status_code="404",
             message_body="Page not found",
         )
 
         # Add a redirect; in case people go to HTTP, redirect them to HTTPS.
-        self._http_listener = ApplicationListener(self, "Listener-Http",
+        self._http_listener = ApplicationListener(
+            self,
+            "Listener-Http",
             load_balancer=alb,
             port=80,
             protocol=ApplicationProtocol.HTTP,
@@ -78,7 +78,8 @@ class ListenerHttpsStack(Stack):
             other=Peer.any_ipv6(),
             description="Allow from anyone on port 80",
         )
-        self._http_listener.add_redirect_response("Http-To-Https",
+        self._http_listener.add_redirect_response(
+            "Http-To-Https",
             status_code="HTTP_301",
             port="443",
             protocol="HTTPS",
@@ -98,21 +99,24 @@ class ListenerHttpsStack(Stack):
             unhealthy_threshold_count=2,
         )
 
-    def add_targets(self,
-                    subdomain_name: str,
-                    port: int,
-                    target: IApplicationLoadBalancerTarget,
-                    priority: int,
-                    *,
-                    path_pattern: Optional[str] = None,
-                    allow_via_http: Optional[bool] = False) -> None:
+    def add_targets(
+        self,
+        subdomain_name: str,
+        port: int,
+        target: IApplicationLoadBalancerTarget,
+        priority: int,
+        *,
+        path_pattern: Optional[str] = None,
+        allow_via_http: Optional[bool] = False,
+    ) -> None:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
         cert = self._subdomains_cert.get(fqdn)
         if not cert:
             cert = certificate.add_certificate(subdomain_name)
 
-            self._listener.add_certificate_arns(fqdn,
+            self._listener.add_certificate_arns(
+                fqdn,
                 arns=[cert.certificate_arn],
             )
 
@@ -126,7 +130,8 @@ class ListenerHttpsStack(Stack):
         else:
             id = fqdn
 
-        target_group = self._listener.add_targets(id,
+        target_group = self._listener.add_targets(
+            id,
             deregistration_delay=Duration.seconds(30),
             slow_start=Duration.seconds(30),
             stickiness_cookie_duration=Duration.minutes(5),
@@ -140,7 +145,8 @@ class ListenerHttpsStack(Stack):
         )
 
         if allow_via_http:
-            self._http_listener.add_target_groups(f"{id}http",
+            self._http_listener.add_target_groups(
+                f"{id}http",
                 target_groups=[target_group],
                 host_header=fqdn,
                 path_pattern=path_pattern,
@@ -148,11 +154,15 @@ class ListenerHttpsStack(Stack):
             )
 
         if fqdn not in self._subdomains_cert:
-            ARecord(self, f"{cert.fqdn}-ARecord",
+            ARecord(
+                self,
+                f"{cert.fqdn}-ARecord",
                 fqdn=cert.fqdn,
                 target=LoadBalancerTarget(self._alb),
             )
-            AaaaRecord(self, f"{cert.fqdn}-AaaaRecord",
+            AaaaRecord(
+                self,
+                f"{cert.fqdn}-AaaaRecord",
                 fqdn=cert.fqdn,
                 target=LoadBalancerTarget(self._alb),
             )
@@ -160,14 +170,18 @@ class ListenerHttpsStack(Stack):
             self._subdomains_cert[fqdn] = cert
 
 
-def add_targets(subdomain_name: str,
-                port: int,
-                target: IApplicationLoadBalancerTarget,
-                priority: int,
-                *,
-                path_pattern: Optional[str] = None,
-                allow_via_http: Optional[bool] = False) -> None:
+def add_targets(
+    subdomain_name: str,
+    port: int,
+    target: IApplicationLoadBalancerTarget,
+    priority: int,
+    *,
+    path_pattern: Optional[str] = None,
+    allow_via_http: Optional[bool] = False,
+) -> None:
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http)
+    return g_listener_https.add_targets(
+        subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http
+    )

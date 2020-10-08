@@ -15,10 +15,7 @@ class PolicyStack(Stack):
     and one that requires additional IAM permissions.
     """
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Stack", "Common-Policy")

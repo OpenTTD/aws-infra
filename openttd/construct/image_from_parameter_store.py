@@ -10,13 +10,7 @@ from openttd.stack.common import parameter_store
 
 
 class ImageFromParameterStore(Construct):
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 *,
-                 parameter_name: str,
-                 image_name: str,
-                 policy: Policy) -> None:
+    def __init__(self, scope: Construct, id: str, *, parameter_name: str, image_name: str, policy: Policy) -> None:
         super().__init__(scope, id)
 
         parameter = parameter_store.add_string(parameter_name, default=":1")

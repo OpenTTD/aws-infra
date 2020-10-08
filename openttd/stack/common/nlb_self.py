@@ -89,7 +89,7 @@ g_nlb = None  # type: Optional[NlbStack]
 
 
 @jsii.implements(IAliasRecordTarget)
-class DomainAlias():
+class DomainAlias:
     def __init__(self, subdomain_name) -> None:
         self.subdomain_name = subdomain_name
 
@@ -104,14 +104,16 @@ class NlbStack(Stack):
     admin_subdomain_name = "nlb-health"
     subdomain_name = "nlb"
 
-    def __init__(self,
-                 scope: Construct,
-                 id: str,
-                 cluster: ICluster,
-                 ecs_security_group: SecurityGroup,
-                 ecs_source_security_group: SecurityGroup,
-                 vpc: IVpc,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        cluster: ICluster,
+        ecs_security_group: SecurityGroup,
+        ecs_source_security_group: SecurityGroup,
+        vpc: IVpc,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
         global g_nlb
@@ -122,7 +124,9 @@ class NlbStack(Stack):
         # TODO --  1) enable auto-assign IPv6 address on public subnets
         # TODO --  2) add to the Outbound rules of "Live-Common-Nlb/ASG/InstanceSecurityGroup" the destination "::/0"
 
-        self.private_zone = HostedZone.from_lookup(self, "PrivateZone",
+        self.private_zone = HostedZone.from_lookup(
+            self,
+            "PrivateZone",
             domain_name="openttd.internal",
             private_zone=True,
         )
@@ -181,7 +185,9 @@ class NlbStack(Stack):
             "systemctl start pproxy.service",
         )
 
-        asg = AutoScalingGroup(self, "ASG",
+        asg = AutoScalingGroup(
+            self,
+            "ASG",
             vpc=vpc,
             instance_type=InstanceType("t3a.nano"),
             machine_image=MachineImage.latest_amazon_linux(generation=AmazonLinuxGeneration.AMAZON_LINUX_2),
@@ -214,7 +220,7 @@ class NlbStack(Stack):
         # the ASG, but it keeps adding up. This makes it a tiny bit
         # easier to get an overview what traffic is allowed from the
         # console on AWS.
-        assert(isinstance(asg.node.children[0], SecurityGroup))
+        assert isinstance(asg.node.children[0], SecurityGroup)
         self.security_group = asg.node.children[0]
 
         listener_https.add_targets(
@@ -226,7 +232,9 @@ class NlbStack(Stack):
 
         # Create a Security Group so the lambdas can access the EC2.
         # This is needed to check if the EC2 instance is fully booted.
-        lambda_security_group = SecurityGroup(self, "LambdaSG",
+        lambda_security_group = SecurityGroup(
+            self,
+            "LambdaSG",
             vpc=vpc,
         )
         self.security_group.add_ingress_rule(
@@ -251,7 +259,7 @@ class NlbStack(Stack):
             timeout=Duration.seconds(180),
             vpc=vpc,
             security_group=lambda_security_group,
-            auto_scaling_group=asg
+            auto_scaling_group=asg,
         )
         self.create_asg_lambda(
             lifecycle_transition=LifecycleTransition.INSTANCE_TERMINATING,
@@ -263,13 +271,17 @@ class NlbStack(Stack):
 
         # Initialize the NLB record on localhost, as we need to be able to
         # reference it for other entries to work correctly.
-        ARecord(self, "ARecord",
+        ARecord(
+            self,
+            "ARecord",
             target=RecordTarget.from_ip_addresses("127.0.0.1"),
             zone=dns.get_hosted_zone(),
             record_name=self.subdomain_name,
             ttl=Duration.seconds(60),
         )
-        AaaaRecord(self, "AAAARecord",
+        AaaaRecord(
+            self,
+            "AAAARecord",
             target=RecordTarget.from_ip_addresses("::1"),
             zone=dns.get_hosted_zone(),
             record_name=self.subdomain_name,
@@ -284,7 +296,9 @@ class NlbStack(Stack):
         self.create_alias(self, "nlb.aws")
 
         # Create a record for the internal DNS
-        ARecord(self, "APrivateRecord",
+        ARecord(
+            self,
+            "APrivateRecord",
             target=RecordTarget.from_ip_addresses("127.0.0.1"),
             zone=self.private_zone,
             record_name=self.subdomain_name,
@@ -296,19 +310,25 @@ class NlbStack(Stack):
         g_nlb = self
 
     def create_alias(self, scope: Construct, subdomain_name):
-        ARecord(scope, f"{subdomain_name}ARecord",
+        ARecord(
+            scope,
+            f"{subdomain_name}ARecord",
             target=RecordTarget.from_alias(DomainAlias(self.subdomain_name)),
             zone=dns.get_hosted_zone(),
             record_name=dns.subdomain_to_fqdn(subdomain_name),
         )
-        AaaaRecord(scope, f"{subdomain_name}AAAARecord",
+        AaaaRecord(
+            scope,
+            f"{subdomain_name}AAAARecord",
             target=RecordTarget.from_alias(DomainAlias(self.subdomain_name)),
             zone=dns.get_hosted_zone(),
             record_name=dns.subdomain_to_fqdn(subdomain_name),
         )
 
     def create_ecs_lambda(self, cluster: ICluster, auto_scaling_group: AutoScalingGroup):
-        lambda_func = Function(self, "LambdaECS",
+        lambda_func = Function(
+            self,
+            "LambdaECS",
             code=Code.from_asset("./lambdas/nlb-ecs"),
             handler="index.lambda_handler",
             runtime=Runtime.PYTHON_3_8,
@@ -317,18 +337,22 @@ class NlbStack(Stack):
                 "AUTO_SCALING_GROUP_NAME": auto_scaling_group.auto_scaling_group_name,
             },
         )
-        lambda_func.add_to_role_policy(PolicyStatement(
-            actions=[
-                "autoscaling:DescribeAutoScalingGroups",
-                "ssm:SendCommand",
-                "ssm:GetCommandInvocation",
-            ],
-            resources=[
-                "*",
-            ],
-        ))
+        lambda_func.add_to_role_policy(
+            PolicyStatement(
+                actions=[
+                    "autoscaling:DescribeAutoScalingGroups",
+                    "ssm:SendCommand",
+                    "ssm:GetCommandInvocation",
+                ],
+                resources=[
+                    "*",
+                ],
+            )
+        )
 
-        Rule(self, "ECS",
+        Rule(
+            self,
+            "ECS",
             event_pattern=EventPattern(
                 detail_type=["ECS Task State Change"],
                 detail={
@@ -339,18 +363,22 @@ class NlbStack(Stack):
             targets=[LambdaFunction(lambda_func)],
         )
 
-    def create_asg_lambda(self,
-                          lifecycle_transition: LifecycleTransition,
-                          timeout: Duration,
-                          vpc: IVpc,
-                          security_group: SecurityGroup,
-                          auto_scaling_group: AutoScalingGroup) -> None:
+    def create_asg_lambda(
+        self,
+        lifecycle_transition: LifecycleTransition,
+        timeout: Duration,
+        vpc: IVpc,
+        security_group: SecurityGroup,
+        auto_scaling_group: AutoScalingGroup,
+    ) -> None:
         if lifecycle_transition == LifecycleTransition.INSTANCE_LAUNCHING:
             name = "Launch"
         else:
             name = "Terminate"
 
-        lambda_func = Function(self, f"Lambda{name}",
+        lambda_func = Function(
+            self,
+            f"Lambda{name}",
             code=Code.from_asset("./lambdas/nlb-asg-lch"),
             handler="index.lambda_handler",
             runtime=Runtime.PYTHON_3_8,
@@ -365,43 +393,51 @@ class NlbStack(Stack):
             security_groups=[security_group],
         )
 
-        auto_scaling_group.add_lifecycle_hook(f"LH{name}",
+        auto_scaling_group.add_lifecycle_hook(
+            f"LH{name}",
             lifecycle_transition=lifecycle_transition,
             notification_target=FunctionHook(lambda_func),
-            default_result=DefaultResult.ABANDON if lifecycle_transition == LifecycleTransition.INSTANCE_LAUNCHING else DefaultResult.CONTINUE,
+            default_result=DefaultResult.ABANDON
+            if lifecycle_transition == LifecycleTransition.INSTANCE_LAUNCHING
+            else DefaultResult.CONTINUE,
             heartbeat_timeout=timeout,
         )
 
-        lambda_func.add_to_role_policy(PolicyStatement(
-            actions=[
-                "ec2:DescribeInstances",
-                "autoscaling:DescribeAutoScalingGroups",
-            ],
-            resources=[
-                "*",
-            ],
-        ))
-        lambda_func.add_to_role_policy(PolicyStatement(
-            actions=[
-                "autoscaling:CompleteLifecycleAction",
-            ],
-            resources=[
-                auto_scaling_group.auto_scaling_group_arn,
-            ],
-        ))
-        lambda_func.add_to_role_policy(PolicyStatement(
-            actions=[
-                "route53:GetChange",
-                "route53:ChangeResourceRecordSets"
-            ],
-            resources=[
-                dns.get_hosted_zone().hosted_zone_arn,
-                self.private_zone.hosted_zone_arn,
-                "arn:aws:route53:::change/*",
-            ],
-        ))
+        lambda_func.add_to_role_policy(
+            PolicyStatement(
+                actions=[
+                    "ec2:DescribeInstances",
+                    "autoscaling:DescribeAutoScalingGroups",
+                ],
+                resources=[
+                    "*",
+                ],
+            )
+        )
+        lambda_func.add_to_role_policy(
+            PolicyStatement(
+                actions=[
+                    "autoscaling:CompleteLifecycleAction",
+                ],
+                resources=[
+                    auto_scaling_group.auto_scaling_group_arn,
+                ],
+            )
+        )
+        lambda_func.add_to_role_policy(
+            PolicyStatement(
+                actions=["route53:GetChange", "route53:ChangeResourceRecordSets"],
+                resources=[
+                    dns.get_hosted_zone().hosted_zone_arn,
+                    self.private_zone.hosted_zone_arn,
+                    "arn:aws:route53:::change/*",
+                ],
+            )
+        )
 
-    def add_nlb(self, scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str) -> None:
+    def add_nlb(
+        self, scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str
+    ) -> None:
         port_dict = port.to_rule_json()
         Tags.of(service).add("NLB-protocol", port_dict["ipProtocol"])
         Tags.of(service).add("NLB-port", str(port_dict["fromPort"]))
@@ -409,16 +445,8 @@ class NlbStack(Stack):
         self.create_alias(scope, subdomain_name)
         self.create_alias(scope, f"{subdomain_name}.aws")
 
-        self.security_group.add_ingress_rule(
-            peer=Peer.any_ipv6(),
-            connection=port,
-            description=f"{description} (IPv6)"
-        )
-        self.security_group.add_ingress_rule(
-            peer=Peer.any_ipv4(),
-            connection=port,
-            description=f"{description} (IPv4)"
-        )
+        self.security_group.add_ingress_rule(peer=Peer.any_ipv6(), connection=port, description=f"{description} (IPv6)")
+        self.security_group.add_ingress_rule(peer=Peer.any_ipv4(), connection=port, description=f"{description} (IPv4)")
 
 
 def add_nlb(scope: Construct, service: IEc2Service, port: Port, subdomain_name: str, description: str) -> None:
