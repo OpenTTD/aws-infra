@@ -82,7 +82,7 @@ class OpenttdComStack(Stack):
             s3_cloud_front=s3_cloud_front,
         )
 
-        for record_name in ("www", "www.aws", None):
+        for record_name in ("www", None):
             route53.ARecord(self, f"{record_name}.openttd.com-ARecord",
                 target=RecordTarget.from_alias(CloudFrontTarget(s3_cloud_front.distribution)),
                 zone=hosted_zone,
