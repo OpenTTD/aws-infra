@@ -134,7 +134,6 @@ class ListenerHttpsStack(Stack):
             id,
             deregistration_delay=Duration.seconds(30),
             slow_start=Duration.seconds(30),
-            stickiness_cookie_duration=Duration.minutes(5),
             health_check=self._get_health_check(),
             port=port,
             protocol=ApplicationProtocol.HTTP,
