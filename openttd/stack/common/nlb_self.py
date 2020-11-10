@@ -290,11 +290,6 @@ class NlbStack(Stack):
         # To make things a bit easier, also alias to staging.
         self.create_alias(self, "nlb.staging")
 
-        # Create a second record under "aws" subdomain. This helps during
-        # migration to CNAME the subdomain from the authority nameserver
-        # to AWS (as in: www.openttd.org CNAME www.aws.openttd.org)
-        self.create_alias(self, "nlb.aws")
-
         # Create a record for the internal DNS
         ARecord(
             self,
@@ -439,7 +434,6 @@ class NlbStack(Stack):
         Tags.of(service).add("NLB-port", str(port_dict["fromPort"]))
 
         self.create_alias(scope, subdomain_name)
-        self.create_alias(scope, f"{subdomain_name}.aws")
 
         self.security_group.add_ingress_rule(peer=Peer.any_ipv6(), connection=port, description=f"{description} (IPv6)")
         self.security_group.add_ingress_rule(peer=Peer.any_ipv4(), connection=port, description=f"{description} (IPv4)")
