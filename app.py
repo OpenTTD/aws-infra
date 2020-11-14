@@ -34,6 +34,10 @@ from openttd.stack.application.master_server import (
 from openttd.stack.application.openttd_com import OpenttdComStack
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
+from openttd.stack.application.wiki import (
+    WikiReload,
+    WikiStack,
+)
 from openttd.stack.common import dns
 from openttd.stack.common.alb import AlbStack
 from openttd.stack.common.certificate import CertificateStack
@@ -245,6 +249,23 @@ for deployment in Deployment:
         policy=eints_policy,
         cluster=ecs.cluster,
         vpc=vpc.vpc,
+        env=env,
+    )
+
+    wiki_policy = PolicyStack(app, f"{prefix}Wiki-Policy", env=env).policy
+    wiki = WikiStack(app, f"{prefix}Wiki",
+        deployment=deployment,
+        policy=wiki_policy,
+        cluster=ecs.cluster,
+        vpc=vpc.vpc,
+        env=env,
+    )
+    WikiReload(app, f"{prefix}WikiReload",
+        deployment=deployment,
+        vpc=vpc.vpc,
+        cluster=ecs.cluster,
+        service=wiki.container.service,
+        ecs_security_group=ecs.security_group,
         env=env,
     )
 
