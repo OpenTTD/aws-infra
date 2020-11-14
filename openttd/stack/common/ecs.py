@@ -35,7 +35,7 @@ class EcsStack(Stack):
             vpc=vpc,
             instance_type=InstanceType("t3a.small"),
             machine_image=EcsOptimizedImage.amazon_linux2(),
-            min_capacity=2,
+            min_capacity=4,
         )
         self._cluster.add_auto_scaling_group(asg)
 
