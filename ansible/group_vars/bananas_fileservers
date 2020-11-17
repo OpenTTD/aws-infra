@@ -1,0 +1,124 @@
+# Our vars, for easy reuse
+cache_timeout: "1y"  # Basically just as long as nginx runs for
+bananas_production_cdn: bananas.cdn.openttd.org
+bananas_staging_cdn: bananas.cdn.staging.openttd.org
+staging_hostname: "{{ inventory_hostname_short }}.cdn.staging.openttd.org"
+
+certbot_admin_email: info@openttd.org
+certbot_create_if_missing: true
+certbot_create_standalone_stop_services: []
+certbot_certs:
+  - domains:
+      - "{{ inventory_hostname }}" # Note that this is the "primary" and contains the certificate for the staging domain
+      - "{{ staging_hostname }}"
+
+
+nginx_remove_default_vhost: true
+nginx_extra_http_options: |
+  proxy_cache_path /tmp/nginx-production-cache/ levels=1:2 keys_zone=nginx-production-cache:16m max_size=1g inactive={{ cache_timeout }} use_temp_path=off;
+  proxy_cache_path /tmp/nginx-staging-cache/ levels=1:2 keys_zone=nginx-staging-cache:16m max_size=1g inactive={{ cache_timeout }} use_temp_path=off;
+
+nginx_healthz: |
+  location = /healthz {
+    access_log off;
+    return 200;
+  }
+
+# SSL mostly taken from https://ssl-config.mozilla.org/#server=nginx&version=1.14.2&config=intermediate&openssl=1.1.1d&guideline=5.6
+# with OSCP & HSTS bits removed which we don't want due to OTTD client's HTTP-only requirement
+nginx_ssl_config: |
+  ssl_certificate     /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
+  ssl_session_timeout 1d;
+  ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+  ssl_session_tickets off;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+  ssl_prefer_server_ciphers off;
+
+# Common bits of the proxy config
+nginx_proxy_config: |
+  proxy_ssl_server_name on;
+  proxy_hide_header Strict-Transport-Security;
+  proxy_hide_header X-Cache;
+  proxy_hide_header ETag;
+  proxy_hide_header Via;
+  proxy_hide_header X-Amz-Cf-Pop;
+  proxy_hide_header X-Amz-Cf-Id;
+  proxy_cache_valid 200 {{ cache_timeout }};
+  proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+  proxy_cache_revalidate on;
+  proxy_cache_lock on;
+  proxy_ignore_headers Set-Cookie;
+  add_header X-Cache-Status $upstream_cache_status;
+
+rewrite_regex: |
+  # Rewrite the first to the second:
+  #   base-graphics/12345678/12345678901234567890123456789012/filename.tar.gz
+  #   base-graphics/12345678/12345678901234567890123456789012.tar.gz
+  # This allows the OpenTTD client to know the name to use for the file,
+  #   while the S3 only knows the md5sum based name.
+  rewrite "^/([a-z-]+)/([a-f0-9]{8})/([a-f0-9]{32})/[a-zA-Z0-9-_.]+\.tar\.gz$" /$1/$2/$3.tar.gz break;
+  return 404;
+
+# Note: Hacks to get around lack of IPv6 support. See https://github.com/geerlingguy/ansible-role-nginx/pull/125
+nginx_vhosts:
+  # production
+  - listen: "80; listen [::]:80"
+    server_name: "{{ inventory_hostname }}"
+    filename: "{{ inventory_hostname }}.80.conf"
+    extra_parameters: |
+      {{ nginx_healthz }}
+      location / {
+        {{ rewrite_regex }}
+
+        proxy_pass https://{{ bananas_production_cdn }}/;
+        proxy_cache nginx-production-cache;
+        proxy_set_header Host {{ bananas_production_cdn }};
+        {{ nginx_proxy_config }}
+      }
+
+  - listen: "443 ssl http2; listen [::]:443 ssl http2"
+    server_name: "{{ inventory_hostname }}"
+    filename: "{{ inventory_hostname }}.443.conf"
+    extra_parameters: |
+      {{ nginx_ssl_config }}
+      {{ nginx_healthz }}
+      location / {
+        {{ rewrite_regex }}
+
+        proxy_pass https://{{ bananas_production_cdn }}/;
+        proxy_cache nginx-production-cache;
+        proxy_set_header Host {{ bananas_production_cdn }};
+        {{ nginx_proxy_config }}
+      }
+
+  # staging
+  - listen: "80; listen [::]:80"
+    server_name: "{{ staging_hostname }}"
+    filename: "{{ staging_hostname }}.80.conf"
+    extra_parameters: |
+      {{ nginx_healthz }}
+      location / {
+        {{ rewrite_regex }}
+
+        proxy_pass https://{{ bananas_staging_cdn }}/;
+        proxy_cache nginx-staging-cache;
+        proxy_set_header Host {{ bananas_staging_cdn }};
+        {{ nginx_proxy_config }}
+      }
+
+  - listen: "443 ssl http2; listen [::]:443 ssl http2"
+    server_name: "{{ staging_hostname }}"
+    filename: "{{ staging_hostname }}.443.conf"
+    extra_parameters: |
+      {{ nginx_ssl_config }}
+      {{ nginx_healthz }}
+      location / {
+        {{ rewrite_regex }}
+
+        proxy_pass https://{{ bananas_staging_cdn }}/;
+        proxy_set_header Host {{ bananas_staging_cdn }};
+        proxy_cache nginx-staging-cache;
+        {{ nginx_proxy_config }}
+      }

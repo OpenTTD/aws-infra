@@ -1,0 +1,170 @@
+- hosts: bananas_fileservers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    # Unlikely to be necessary after upgrading to bullseye (needed to pull in python3-firewall)
+    - name: Add backports repo
+      apt_repository:
+        repo: deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main
+        state: present
+        filename: backports
+
+    - name: Update apt
+      apt:
+        update_cache: true
+        cache_valid_time: 86400  # a day is plenty
+      changed_when: false
+
+    - name: Upgrade & cleanup apt
+      apt:
+        upgrade: safe
+        autoremove: true
+        autoclean: true
+
+    - name: Install apt https support & cron
+      apt:
+        name:
+          - apt-transport-https
+          - cron  # required for certbot
+        state: present
+
+    - name: Install firewalld & python bindings
+      apt:
+        name:  # required for ansible.posix.firewalld
+          - firewalld
+          - python3-firewall
+          - iptables  # Newer version fixes a bug in buster iptables
+        default_release: "{{ ansible_distribution_release }}-backports"
+        state: present
+
+  roles:
+    - geerlingguy.certbot
+    - geerlingguy.nginx
+
+  tasks:
+    - name: Flush handlers in case any configs have changed
+      meta: flush_handlers
+
+    - name: Add users' ssh keys to the current account
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ item }}"
+      with_items: "{{ keys }}"
+
+    - name: Install some helpful utilities
+      apt:
+        name:
+          - bash-completion
+          - logrotate
+          - molly-guard
+          - rsync
+          - sshguard
+          - unattended-upgrades
+          - vim
+        state: present
+
+    - name: Enable persistent systemd journal
+      lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: "^Storage="
+        line: "Storage=persistent"
+      notify:
+        restart journal
+
+    - name: Copy sshd config
+      copy:
+        src: files/sshd_config
+        dest: /etc/ssh/sshd_config
+      notify:
+        restart ssh
+
+    ######
+    # Firewall stuff
+    ######
+
+    - name: Configure firewalld.
+      lineinfile:
+        path: /etc/firewalld/firewalld.conf
+        regexp: "^FirewallBackend="
+        line: "FirewallBackend=nftables"
+      notify:
+        - restart firewalld
+
+    - name: Configure firewall rules
+      ansible.posix.firewalld:
+        permanent: true
+        state: enabled
+        port: "{{ item }}"
+      with_items:
+        - "22/tcp"
+        - "80/tcp"
+        - "443/tcp"
+        - "67/udp"   # dhcp
+        - "68/udp"   # dhcp
+        - "123/udp"  # ntp
+      notify:
+        - restart firewalld
+
+    - name: Create sshguard blacklist db directory
+      file:
+        path: /var/db/sshguard
+        state: directory
+
+    # Use firewalld backend
+    # Workaround https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=928525
+    # Set persistent blacklist
+    - name: Configure sshguard
+      lineinfile:
+        path: /etc/sshguard/sshguard.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - regexp: "^BACKEND="
+          line: 'BACKEND="/usr/lib/x86_64-linux-gnu/sshg-fw-firewalld"'
+        - regexp: "^LOGREADER="
+          line: 'LOGREADER="LANG=C /bin/journalctl -afb -p info -t sshd -n1 -o cat"'
+        - regexp: "^BLACKLIST_FILE="
+          line: 'BLACKLIST_FILE=100:/var/db/sshguard/blacklist.db'
+      notify:
+        - restart sshguard
+
+    - name: Flush handlers in case any configs have changed
+      meta: flush_handlers
+
+    # Put these last (and after a flush_handlers) so that pending firewall changes have been applied
+    - name: Test HTTPS to health check endpoint
+      uri:
+        url: https://{{ inventory_hostname }}/healthz
+        status_code: 200
+      delegate_to: localhost
+      become: false
+
+    # Note that, in effect, this tests against 'localhost', but also tests connecting to upstream
+    # Doesn't quite test actual external access, but it's much faster than waiting for my slow internet connection
+    - name: Test download of particular item (OGFX)
+      uri:
+        url: "{{ item }}://{{ inventory_hostname }}/base-graphics/4f474658/99ef7df70a3fe95f0f9da6dcb5e63444/FOR-TESTING-ONLY.tar.gz"
+        status_code: 200
+      with_items:
+        - http
+        - https
+      become: false
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted
+    - name: restart sshguard
+      service:
+        name: sshguard
+        state: restarted
+    - name: restart journal
+      service:
+        name: systemd-journald
+        state: restarted
+    - name: restart firewalld
+      service:
+        name: firewalld
+        state: restarted
