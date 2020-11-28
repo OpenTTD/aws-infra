@@ -67,12 +67,14 @@ class WikiStack(Stack):
             memory = 384
             github_url = "git@github.com:OpenTTD/wiki-data.git"
             github_history_url = "https://github.com/OpenTTD/wiki-data"
+            frontend_url = "https://wiki.openttd.org"
         else:
             desired_count = 1
             priority = 180
             memory = 128
             github_url = "git@github.com:OpenTTD/wiki-data-staging.git"
             github_history_url = "https://github.com/OpenTTD/wiki-data-staging"
+            frontend_url = "https://wiki.staging.openttd.org"
 
         sentry_dsn = parameter_store.add_secure_string(f"/Wiki/{deployment.value}/SentryDSN").parameter
         user_github_client_id = parameter_store.add_secure_string(f"/Wiki/{deployment.value}/UserGithubClientId").parameter
@@ -104,6 +106,8 @@ class WikiStack(Stack):
                 "/data",
                 "--user",
                 "github",
+                "--frontend-url",
+                frontend_url,
                 "--cache-metadata-file",
                 "/cache/metadata.json",
                 "--cache-page-folder",
