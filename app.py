@@ -269,15 +269,16 @@ for deployment in Deployment:
         env=env,
     )
 
-    if deployment == Deployment.PRODUCTION:
-        dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
-        DorpsgekStack(app, f"{prefix}Dorpsgek",
-            deployment=deployment,
-            policy=dorpsgek_policy,
-            cluster=ecs.cluster,
-            env=env,
-        )
+    dorpsgek_policy = PolicyStack(app, f"{prefix}Dorpsgek-Policy", env=env).policy
+    DorpsgekStack(app, f"{prefix}Dorpsgek",
+        deployment=deployment,
+        policy=dorpsgek_policy,
+        cluster=ecs.cluster,
+        vpc=vpc.vpc,
+        env=env,
+    )
 
+    if deployment == Deployment.PRODUCTION:
         # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
         # connections between CloudFlare and CloudFront, we provision the
         # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
