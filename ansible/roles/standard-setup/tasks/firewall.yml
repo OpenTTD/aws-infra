@@ -1,0 +1,66 @@
+- name: Install firewalld & python bindings
+  apt:
+    name:
+      - firewalld  # Required for ansible.posix.firewalld
+      - python3-firewall
+      - iptables   # Newer version fixes a bug in buster iptables
+      - sshguard   # Helpful at blocking ssh attacks
+    default_release: "{{ ansible_distribution_release }}-backports"
+    state: present
+
+- name: Configure firewalld
+  lineinfile:
+    path: /etc/firewalld/firewalld.conf
+    regexp: "^FirewallBackend="
+    line: "FirewallBackend=nftables"
+  notify:
+    - restart firewalld
+  register: firewalld_backend
+
+- name: Reboot to get new firewall configuration (notably iptables)
+  reboot:
+    search_paths:
+      - "/lib/molly-guard"
+      - "/usr/sbin"  # molly-guard might not have been installed yet
+  when: firewalld_backend.changed
+
+- name: Configure firewall rules
+  ansible.posix.firewalld:
+    permanent: true
+    state: enabled
+    port: "{{ item }}"
+  with_items:
+    - "22/tcp"
+    - "80/tcp"
+    - "443/tcp"
+    - "67/udp"   # dhcp
+    - "68/udp"   # dhcp
+    - "123/udp"  # ntp
+  notify:
+    - restart firewalld
+
+- name: Create sshguard blacklist db directory
+  file:
+    path: /var/db/sshguard
+    state: directory
+
+- name: Configure sshguard
+  lineinfile:
+    path: /etc/sshguard/sshguard.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    # Use firewalld backend
+    - regexp: "^BACKEND="
+      line: 'BACKEND="/usr/lib/x86_64-linux-gnu/sshg-fw-firewalld"'
+    # Workaround https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=928525
+    - regexp: "^LOGREADER="
+      line: 'LOGREADER="LANG=C /bin/journalctl -afb -p info -t sshd -n1 -o cat"'
+    # Set persistent blacklist
+    - regexp: "^BLACKLIST_FILE="
+      line: 'BLACKLIST_FILE=100:/var/db/sshguard/blacklist.db'
+  notify:
+    - restart sshguard
+
+- name: Flush handlers to reload firewall with new config
+  meta: flush_handlers

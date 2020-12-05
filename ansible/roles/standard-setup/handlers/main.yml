@@ -1,0 +1,24 @@
+- name: restart ssh
+  service:
+    name: ssh
+    state: restarted
+
+- name: restart sshguard
+  service:
+    name: sshguard
+    state: restarted
+
+- name: restart journal
+  service:
+    name: systemd-journald
+    state: restarted
+
+- name: restart firewalld
+  service:
+    name: firewalld
+    state: restarted
+
+- name: restart networking
+  service:
+    name: networking
+    state: restarted
