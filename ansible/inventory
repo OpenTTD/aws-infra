@@ -1,3 +1,3 @@
 [bananas_fileservers]
-bananas-1.cdn.openttd.org
-bananas-2.cdn.openttd.org
+bananas-1.cdn.openttd.org ipv6_addr=2001:41d0:801:2000::3297 ipv6_gw=2001:41d0:801:2000::1
+bananas-2.cdn.openttd.org ipv6_addr=2001:41d0:701:1100::5d16 ipv6_gw=2001:41d0:701:1100::1

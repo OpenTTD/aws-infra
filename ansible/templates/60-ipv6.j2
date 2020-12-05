@@ -1,0 +1,7 @@
+iface eth0 inet6 static
+address {{ ipv6_addr }}
+netmask 128
+post-up /sbin/ip -6 route add {{ ipv6_gw }} dev eth0
+post-up /sbin/ip -6 route add default via {{ ipv6_gw }} dev eth0
+pre-down /sbin/ip -6 route del default via {{ ipv6_gw }} dev eth0
+pre-down /sbin/ip -6 route del {{ ipv6_gw }} dev eth0

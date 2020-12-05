@@ -64,6 +64,21 @@
           - vim
         state: present
 
+    - name: Disable cloud-init networking
+      copy:
+        dest: /etc/cloud/cloud.cfg.d/98-disable-network-config.cfg
+        content: "network: {config: disabled}\n"
+      notify:
+        restart networking
+
+    - name: Configure IPv6
+      template:
+        src: templates/60-ipv6.j2
+        dest: /etc/network/interfaces.d/60-ipv6
+      notify:
+        restart networking
+      when: ipv6_addr is defined
+
     - name: Enable persistent systemd journal
       lineinfile:
         path: /etc/systemd/journald.conf
@@ -167,4 +182,8 @@
     - name: restart firewalld
       service:
         name: firewalld
+        state: restarted
+    - name: restart networking
+      service:
+        name: networking
         state: restarted
