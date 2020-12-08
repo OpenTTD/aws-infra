@@ -249,6 +249,17 @@ class BananasServerStack(Stack):
         cdn_fqdn = dns.subdomain_to_fqdn("bananas.cdn")
         cdn_url = f"http://{cdn_fqdn}"
 
+        cdn_urls = []
+        for cdn_server in ("bananas-1.cdn", "bananas-2.cdn"):
+            cdn_server_fqdn = dns.subdomain_to_fqdn(cdn_server)
+
+            cdn_urls.extend(
+                [
+                    "--cdn-url",
+                    f"http://{cdn_server_fqdn}",
+                ]
+            )
+
         sentry_dsn = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/SentryDSN").parameter
         reload_secret = parameter_store.add_secure_string(f"/BananasServer/{deployment.value}/ReloadSecret").parameter
 
@@ -261,14 +272,14 @@ class BananasServerStack(Stack):
             "github",
             "--index-github-url",
             github_url,
-            "--cdn-url",
+            "--cdn-fallback-url",
             cdn_url,
             "--bind",
             "0.0.0.0",
             "--content-port",
             str(content_port),
             "--proxy-protocol",
-        ]
+        ] + cdn_urls
         command.extend(bootstrap_command)
 
         self.container = ECSHTTPSContainer(
