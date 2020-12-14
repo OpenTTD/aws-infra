@@ -15,7 +15,7 @@ certbot_certs:
 
 nginx_remove_default_vhost: true
 nginx_extra_http_options: |
-  proxy_cache_path /tmp/nginx-production-cache/ levels=1:2 keys_zone=nginx-production-cache:16m max_size=1g inactive={{ cache_timeout }} use_temp_path=off;
+  proxy_cache_path /tmp/nginx-production-cache/ levels=1:2 keys_zone=nginx-production-cache:16m max_size=10g inactive={{ cache_timeout }} use_temp_path=off;
   proxy_cache_path /tmp/nginx-staging-cache/ levels=1:2 keys_zone=nginx-staging-cache:16m max_size=1g inactive={{ cache_timeout }} use_temp_path=off;
 
 nginx_healthz: |
