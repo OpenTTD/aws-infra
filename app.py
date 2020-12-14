@@ -32,6 +32,7 @@ from openttd.stack.application.master_server import (
     MasterServerWebStack,
 )
 from openttd.stack.application.openttd_com import OpenttdComStack
+from openttd.stack.application.preview import PreviewStack
 from openttd.stack.application.redirect import RedirectStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.application.wiki import (
@@ -311,6 +312,11 @@ for deployment in Deployment:
         )
 
         DocsStack(app, f"{prefix}Docs",
+            deployment=deployment,
+            env=env,
+        )
+
+        PreviewStack(app, f"{prefix}Preview",
             deployment=deployment,
             env=env,
         )
