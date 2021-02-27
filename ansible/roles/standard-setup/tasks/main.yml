@@ -11,11 +11,17 @@
     cache_valid_time: 86400  # a day is plenty
   changed_when: false
 
-- name: Upgrade & cleanup apt
+- name: Upgrade apt
   apt:
     upgrade: safe
-    autoremove: true
+
+- name: Autoclean apt
+  apt:
     autoclean: true
+
+- name: Autoremove apt
+  apt:
+    autoremove: true
 
 - name: Install apt https support & cron
   apt:
