@@ -7,7 +7,7 @@ Then run:
 
 ```
 ansible-galaxy install -r requirements.yml
-ansible-playbook --user debian --inventory inventory --diff content-servers.yml
+ansible-playbook --inventory inventory --diff content-servers.yml
 ```
 
 Due to a quirk of configuration, the staging hosts happen to be the same hosts as the production hosts
