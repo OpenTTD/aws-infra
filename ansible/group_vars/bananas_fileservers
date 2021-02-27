@@ -3,6 +3,15 @@ cache_timeout: "1y"  # Basically just as long as nginx runs for
 bananas_production_cdn: bananas.cdn.openttd.org
 bananas_staging_cdn: bananas.cdn.staging.openttd.org
 staging_hostname: "{{ inventory_hostname_short }}.cdn.staging.openttd.org"
+
+firewall_open_ports:
+  - "22/tcp"
+  - "80/tcp"
+  - "443/tcp"
+  - "67/udp"   # dhcp
+  - "68/udp"   # dhcp
+  - "123/udp"  # ntp
+
 # End of our vars
 
 certbot_admin_email: info@openttd.org

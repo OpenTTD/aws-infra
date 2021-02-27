@@ -7,11 +7,13 @@
     - standard-setup
     - geerlingguy.certbot
     - geerlingguy.nginx
+    - firewall
 
   tasks:
     - name: Force nginx handlers to run before testing nginx
       meta: flush_handlers
 
+    # Put these last (and after a flush_handlers) so that pending firewall changes have been applied
     - name: Test HTTPS to health check endpoint
       uri:
         url: https://{{ inventory_hostname }}/healthz
