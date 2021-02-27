@@ -1,17 +1,2 @@
-- name: Disable cloud-init networking
-  copy:
-    dest: /etc/cloud/cloud.cfg.d/98-disable-network-config.cfg
-    content: "network: {config: disabled}\n"
-  notify:
-    restart networking
-
-- name: Configure IPv6
-  template:
-    src: templates/60-ipv6.j2
-    dest: /etc/network/interfaces.d/60-ipv6
-  notify:
-    restart networking
-  when: ipv6_addr is defined
-
-- name: Flush handlers to restart networking
-  meta: flush_handlers
+- import_tasks: tasks.yml
+  tags: ovh

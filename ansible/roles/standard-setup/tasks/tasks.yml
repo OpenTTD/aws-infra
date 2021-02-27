@@ -1,0 +1,66 @@
+# Needed to pull in python3-firewall (buster only)
+- name: Add backports repo
+  apt_repository:
+    repo: deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main
+    state: present
+    filename: backports
+
+- name: Update apt
+  apt:
+    update_cache: true
+    cache_valid_time: 86400  # a day is plenty
+  changed_when: false
+
+- name: Upgrade apt
+  apt:
+    upgrade: safe
+
+- name: Autoclean apt
+  apt:
+    autoclean: true
+
+- name: Autoremove apt
+  apt:
+    autoremove: true
+
+- name: Install apt https support & cron
+  apt:
+    name:
+      - apt-transport-https
+      - cron  # required for certbot
+    state: present
+
+- name: Firewall setup
+  include: firewall.yml
+
+- name: Enable persistent systemd journal
+  lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: "^Storage="
+    line: "Storage=persistent"
+  notify:
+    restart journal
+
+- name: Add users' ssh keys to the current account
+  authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ item }}"
+  with_items: "{{ keys }}"
+
+- name: Copy sshd config
+  copy:
+    src: files/sshd_config
+    dest: /etc/ssh/sshd_config
+  notify:
+    restart ssh
+
+- name: Install some helpful utilities
+  apt:
+    name:
+      - bash-completion
+      - logrotate
+      - molly-guard
+      - rsync
+      - unattended-upgrades
+      - vim
+    state: present
