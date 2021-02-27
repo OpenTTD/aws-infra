@@ -20,7 +20,6 @@
   apt:
     name:
       - apt-transport-https
-      - cron  # required for certbot
     state: present
 
 - name: Enable persistent systemd journal

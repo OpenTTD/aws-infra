@@ -5,8 +5,8 @@
   roles:
     - ovh  # Do this as early as possible to ensure ipv6 is configured and working
     - standard-setup
-    - geerlingguy.certbot
     - geerlingguy.nginx
+    - certbot  # nginx must have been set up first
     - firewall
 
   tasks:

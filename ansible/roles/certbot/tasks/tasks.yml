@@ -1,0 +1,28 @@
+- name: Install apt dependencies
+  apt:
+    name:
+      - certbot
+      - cron
+
+- name: Create acme challenge directory
+  file:
+    path: "{{ acme_challenge_dir }}"
+    state: directory
+
+# If we've just modified nginx, we want to make sure that its config is live
+- name: Force nginx handlers to run before testing nginx
+  meta: flush_handlers
+
+# TODO: Figure out a way to rerun this if the command/domains have changed
+# In normal usage this is only necessary at initial setup
+- name: Create letsencrypt certificate
+  shell: >
+    certbot certonly -n
+    --webroot -w /var/www/letsencrypt
+    -d "{{ letsencrypt_domains | join(',') }}"
+    -m {{ letsencrypt_admin_email }} --agree-tos
+    --renew-hook "systemctl reload nginx"
+  args:
+    creates: /etc/letsencrypt/live/{{ letsencrypt_domains | first }}
+
+# Note: certbot installation creates a renewal cron, no need to do it ourselves
