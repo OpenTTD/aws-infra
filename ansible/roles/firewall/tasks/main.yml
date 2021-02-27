@@ -1,0 +1,2 @@
+- import_tasks: tasks.yml
+  tags: firewall
