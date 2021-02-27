@@ -4,6 +4,8 @@ bananas_production_cdn: bananas.cdn.openttd.org
 bananas_staging_cdn: bananas.cdn.staging.openttd.org
 staging_hostname: "{{ inventory_hostname_short }}.cdn.staging.openttd.org"
 
+acme_challenge_dir: /var/www/letsencrypt
+
 firewall_open_ports:
   - "22/tcp"
   - "80/tcp"
@@ -12,16 +14,12 @@ firewall_open_ports:
   - "68/udp"   # dhcp
   - "123/udp"  # ntp
 
+letsencrypt_admin_email: info@openttd.org
+letsencrypt_domains:
+  - "{{ inventory_hostname }}" # Note that this is the "primary" and contains the certificate for the staging domain
+  - "{{ staging_hostname }}"
+
 # End of our vars
-
-certbot_admin_email: info@openttd.org
-certbot_create_if_missing: true
-certbot_create_standalone_stop_services: []
-certbot_certs:
-  - domains:
-      - "{{ inventory_hostname }}" # Note that this is the "primary" and contains the certificate for the staging domain
-      - "{{ staging_hostname }}"
-
 
 nginx_remove_default_vhost: true
 nginx_extra_http_options: |
@@ -32,6 +30,11 @@ nginx_healthz: |
   location = /healthz {
     access_log off;
     return 200;
+  }
+
+nginx_well_known: |
+  location /.well-known/acme-challenge/ {
+    alias {{ acme_challenge_dir }}/.well-known/acme-challenge/;
   }
 
 # SSL mostly taken from https://ssl-config.mozilla.org/#server=nginx&version=1.14.2&config=intermediate&openssl=1.1.1d&guideline=5.6
@@ -79,6 +82,7 @@ nginx_vhosts:
     filename: "{{ inventory_hostname }}.80.conf"
     extra_parameters: |
       {{ nginx_healthz }}
+      {{ nginx_well_known }}
       location / {
         {{ rewrite_regex }}
 
@@ -109,6 +113,7 @@ nginx_vhosts:
     filename: "{{ staging_hostname }}.80.conf"
     extra_parameters: |
       {{ nginx_healthz }}
+      {{ nginx_well_known }}
       location / {
         {{ rewrite_regex }}
 
