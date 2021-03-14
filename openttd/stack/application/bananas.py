@@ -156,6 +156,7 @@ class BananasApiStack(Stack):
             port=80,
             memory_limit_mib=memory,
             desired_count=desired_count,
+            single_instance=True,
             cluster=cluster,
             priority=priority,
             command=[
@@ -370,6 +371,7 @@ class BananasFrontendWebStack(Stack):
             port=80,
             memory_limit_mib=64,
             desired_count=desired_count,
+            single_instance=True,
             cluster=cluster,
             priority=priority,
             command=[

@@ -101,6 +101,7 @@ class DorpsgekStack(Stack):
             port=80,
             memory_limit_mib=96,
             desired_count=desired_count,
+            single_instance=True,
             cluster=cluster,
             priority=priority,
             command=[

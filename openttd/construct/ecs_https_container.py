@@ -58,6 +58,7 @@ class ECSHTTPSContainer(Construct):
         secrets: Mapping[str, Secret] = {},
         volumes: Mapping[str, Volume] = {},
         target_group: Optional[ApplicationTargetGroup] = None,
+        single_instance: bool = False,
     ) -> None:
         super().__init__(scope, id)
 
@@ -113,6 +114,12 @@ class ECSHTTPSContainer(Construct):
             port=port,
         )
 
+        max_healthy_percent = 200
+        min_healthy_percent = 50
+        if single_instance:
+            max_healthy_percent = 100
+            min_healthy_percent = 0
+
         self.service = Ec2Service(
             self,
             "Service",
@@ -120,6 +127,8 @@ class ECSHTTPSContainer(Construct):
             task_definition=task_definition,
             desired_count=desired_count,
             health_check_grace_period=health_check_grace_period,
+            max_healthy_percent=max_healthy_percent,
+            min_healthy_percent=min_healthy_percent,
         )
         policy.add_service(self.service)
         policy.add_cluster(cluster)
