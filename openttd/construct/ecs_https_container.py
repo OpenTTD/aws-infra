@@ -17,6 +17,7 @@ from aws_cdk.aws_ecs import (
     Secret,
     Volume,
 )
+from aws_cdk.aws_elasticloadbalancingv2 import ApplicationTargetGroup
 from typing import (
     List,
     Mapping,
@@ -51,10 +52,12 @@ class ECSHTTPSContainer(Construct):
         path_pattern: Optional[str] = None,
         health_check_grace_period: Optional[Duration] = None,
         allow_via_http: Optional[bool] = False,
+        no_dns: Optional[bool] = False,
         command: Optional[List[str]] = None,
         environment: Mapping[str, str] = {},
         secrets: Mapping[str, Secret] = {},
         volumes: Mapping[str, Volume] = {},
+        target_group: Optional[ApplicationTargetGroup] = None,
     ) -> None:
         super().__init__(scope, id)
 
@@ -125,12 +128,14 @@ class ECSHTTPSContainer(Construct):
             PlacementStrategy.spread_across(BuiltInAttributes.AVAILABILITY_ZONE),
         )
 
-        self.add_target(
+        self.target_group = self.add_target(
             subdomain_name=subdomain_name,
             port=port,
             priority=priority,
             path_pattern=path_pattern,
             allow_via_http=allow_via_http,
+            no_dns=no_dns,
+            target_group=target_group,
         )
 
         # Remove the security group from this stack, and add it to the ALB stack
@@ -162,12 +167,16 @@ class ECSHTTPSContainer(Construct):
         *,
         path_pattern: Optional[str] = None,
         allow_via_http: Optional[bool] = False,
-    ) -> None:
-        listener_https.add_targets(
+        no_dns: Optional[bool] = False,
+        target_group: Optional[ApplicationTargetGroup] = None,
+    ) -> ApplicationTargetGroup:
+        return listener_https.add_targets(
             subdomain_name=subdomain_name,
             port=port,
             target=self.service.load_balancer_target(container_name="Container", container_port=port),
             priority=priority,
             path_pattern=path_pattern,
             allow_via_http=allow_via_http,
+            no_dns=no_dns,
+            target_group=target_group,
         )

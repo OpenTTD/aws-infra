@@ -7,6 +7,7 @@ from aws_cdk.core import (
 from aws_cdk.aws_elasticloadbalancingv2 import (
     ApplicationListener,
     ApplicationProtocol,
+    ApplicationTargetGroup,
     IApplicationLoadBalancer,
     IApplicationLoadBalancerTarget,
     HealthCheck,
@@ -108,7 +109,9 @@ class ListenerHttpsStack(Stack):
         *,
         path_pattern: Optional[str] = None,
         allow_via_http: Optional[bool] = False,
-    ) -> None:
+        no_dns: Optional[bool] = False,
+        target_group: Optional[ApplicationTargetGroup] = None,
+    ) -> ApplicationTargetGroup:
         fqdn = dns.subdomain_to_fqdn(subdomain_name)
 
         cert = self._subdomains_cert.get(fqdn)
@@ -130,18 +133,27 @@ class ListenerHttpsStack(Stack):
         else:
             id = fqdn
 
-        target_group = self._listener.add_targets(
-            id,
-            deregistration_delay=Duration.seconds(30),
-            slow_start=Duration.seconds(30),
-            health_check=self._get_health_check(),
-            port=port,
-            protocol=ApplicationProtocol.HTTP,
-            targets=[target],
-            host_header=fqdn,
-            path_pattern=path_pattern,
-            priority=priority,
-        )
+        if target_group is not None:
+            self._listener.add_target_groups(
+                id,
+                target_groups=[target_group],
+                host_header=fqdn,
+                path_pattern=path_pattern,
+                priority=priority,
+            )
+        else:
+            target_group = self._listener.add_targets(
+                id,
+                deregistration_delay=Duration.seconds(30),
+                slow_start=Duration.seconds(30),
+                health_check=self._get_health_check(),
+                port=port,
+                protocol=ApplicationProtocol.HTTP,
+                targets=[target],
+                host_header=fqdn,
+                path_pattern=path_pattern,
+                priority=priority,
+            )
 
         if allow_via_http:
             self._http_listener.add_target_groups(
@@ -153,20 +165,23 @@ class ListenerHttpsStack(Stack):
             )
 
         if fqdn not in self._subdomains_cert:
-            ARecord(
-                self,
-                f"{cert.fqdn}-ARecord",
-                fqdn=cert.fqdn,
-                target=LoadBalancerTarget(self._alb),
-            )
-            AaaaRecord(
-                self,
-                f"{cert.fqdn}-AaaaRecord",
-                fqdn=cert.fqdn,
-                target=LoadBalancerTarget(self._alb),
-            )
+            if not no_dns:
+                ARecord(
+                    self,
+                    f"{cert.fqdn}-ARecord",
+                    fqdn=cert.fqdn,
+                    target=LoadBalancerTarget(self._alb),
+                )
+                AaaaRecord(
+                    self,
+                    f"{cert.fqdn}-AaaaRecord",
+                    fqdn=cert.fqdn,
+                    target=LoadBalancerTarget(self._alb),
+                )
 
             self._subdomains_cert[fqdn] = cert
+
+        return target_group
 
 
 def add_targets(
@@ -177,8 +192,19 @@ def add_targets(
     *,
     path_pattern: Optional[str] = None,
     allow_via_http: Optional[bool] = False,
-) -> None:
+    no_dns: Optional[bool] = False,
+    target_group: Optional[ApplicationTargetGroup] = None,
+) -> ApplicationTargetGroup:
     if g_listener_https is None:
         raise Exception("No ListenerHTTPSStack instance exists")
 
-    return g_listener_https.add_targets(subdomain_name, port, target, priority, path_pattern=path_pattern, allow_via_http=allow_via_http)
+    return g_listener_https.add_targets(
+        subdomain_name,
+        port,
+        target,
+        priority,
+        path_pattern=path_pattern,
+        allow_via_http=allow_via_http,
+        no_dns=no_dns,
+        target_group=target_group,
+    )

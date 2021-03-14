@@ -8,8 +8,19 @@ client_ec2 = None
 
 
 def write_nginx_config(load_balancer):
-    with open(f"nlb.conf", "w") as fp:
-        fp.write(f"stream {{\n")
+    with open("nlb.conf", "w") as fp:
+        fp.write("stream {\n")
+
+        # Forward all 443 traffic to the ALB.
+        fp.write("  upstream alb_https {\n")
+        fp.write("    hash $remote_addr;\n")
+        fp.write("    server www.openttd.org:443;\n")
+        fp.write("  }\n")
+        fp.write("  server {\n")
+        fp.write("    listen 443;\n")
+        fp.write("    listen [::]:443;\n")
+        fp.write("    proxy_pass alb_https;\n")
+        fp.write("  }\n")
 
         for listener, backends in load_balancer.items():
             protocol, port = listener
@@ -20,23 +31,23 @@ def write_nginx_config(load_balancer):
                 protocol_if_not_tcp = protocol
 
             fp.write(f"  upstream {protocol}{port} {{\n")
-            fp.write(f"    hash $remote_addr;\n")
+            fp.write("    hash $remote_addr;\n")
             for backend in backends:
                 host_ip, host_port = backend
                 fp.write(f"    server {host_ip}:{host_port};\n")
-            fp.write(f"  }}\n")
+            fp.write("  }\n")
 
-            fp.write(f"  server {{\n")
+            fp.write("  server {\n")
             fp.write(f"    listen {port} {protocol_if_not_tcp};\n")
             fp.write(f"    listen [::]:{port} {protocol_if_not_tcp};\n")
             fp.write(f"    proxy_pass {protocol}{port};\n")
-            fp.write(f"    proxy_protocol on;\n")
+            fp.write("    proxy_protocol on;\n")
             if protocol == "udp":
-                fp.write(f"    proxy_requests 1;\n")
-                fp.write(f"    proxy_timeout 30s;\n")
-            fp.write(f"  }}\n")
+                fp.write("    proxy_requests 1;\n")
+                fp.write("    proxy_timeout 30s;\n")
+            fp.write("  }\n")
 
-        fp.write(f"}}\n")
+        fp.write("}\n")
 
     os.system("systemctl reload nginx")
 

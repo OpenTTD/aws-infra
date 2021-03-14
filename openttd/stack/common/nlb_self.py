@@ -249,6 +249,27 @@ class NlbStack(Stack):
             description="ECS to target",
         )
 
+        self.security_group.add_ingress_rule(
+            peer=Peer.any_ipv6(),
+            connection=Port.tcp(80),
+            description="HTTP forward to ALB (IPv6)",
+        )
+        self.security_group.add_ingress_rule(
+            peer=Peer.any_ipv4(),
+            connection=Port.tcp(80),
+            description="HTTP forward to ALB (IPv4)",
+        )
+        self.security_group.add_ingress_rule(
+            peer=Peer.any_ipv6(),
+            connection=Port.tcp(443),
+            description="HTTPS forward to ALB (IPv6)",
+        )
+        self.security_group.add_ingress_rule(
+            peer=Peer.any_ipv4(),
+            connection=Port.tcp(443),
+            description="HTTPS forward to ALB (IPv4)",
+        )
+
         self.create_ecs_lambda(
             cluster=cluster,
             auto_scaling_group=asg,

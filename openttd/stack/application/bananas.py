@@ -209,9 +209,9 @@ class BananasApiStack(Stack):
 
 class BananasServerStack(Stack):
     application_name = "BananasServer"
-    subdomain_name = "binaries"
+    subdomain_name = "content"
+    subdomain_name_alt = "binaries"
     path_pattern = "/bananas"
-    nlb_subdomain_name = "content"
 
     def __init__(
         self,
@@ -233,14 +233,14 @@ class BananasServerStack(Stack):
 
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
-            priority = 44
+            priority = 44  # 45 is used too
             memory = 256
             github_url = "https://github.com/OpenTTD/BaNaNaS"
             content_port = 3978
             bootstrap_command = ["--bootstrap-unique-id", "4f474658"]
         else:
             desired_count = 1
-            priority = 144
+            priority = 144  # 145 is used too
             memory = 128
             github_url = "https://github.com/OpenTTD/BaNaNaS-staging"
             content_port = 4978
@@ -285,7 +285,7 @@ class BananasServerStack(Stack):
         self.container = ECSHTTPSContainer(
             self,
             self.application_name,
-            subdomain_name=self.subdomain_name,
+            subdomain_name=self.subdomain_name_alt,
             path_pattern=self.path_pattern,
             allow_via_http=True,
             deployment=deployment,
@@ -307,8 +307,17 @@ class BananasServerStack(Stack):
             },
         )
 
+        self.container.add_target(
+            subdomain_name=self.subdomain_name,
+            port=80,
+            priority=priority + 1,
+            allow_via_http=True,
+            no_dns=True,
+            target_group=self.container.target_group,
+        )
+
         self.container.add_port(content_port)
-        nlb.add_nlb(self, self.container.service, Port.tcp(content_port), self.nlb_subdomain_name, "BaNaNaS Server")
+        nlb.add_nlb(self, self.container.service, Port.tcp(content_port), self.subdomain_name, "BaNaNaS Server")
 
         self.container.task_role.add_to_policy(
             PolicyStatement(
