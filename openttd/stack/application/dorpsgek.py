@@ -56,6 +56,7 @@ class DorpsgekStack(Stack):
         if deployment == Deployment.PRODUCTION:
             desired_count = 1
             priority = 30
+            memory = 96
             addressed_by = "@"
             irc_username = "DorpsGek"
             channels = [
@@ -75,6 +76,7 @@ class DorpsgekStack(Stack):
         else:
             desired_count = 1
             priority = 130
+            memory = 64
             addressed_by = "%"
             irc_username = "DorpsGek_ivs"
             channels = [
@@ -99,7 +101,7 @@ class DorpsgekStack(Stack):
             application_name=self.application_name,
             image_name="ghcr.io/openttd/dorpsgek",
             port=80,
-            memory_limit_mib=96,
+            memory_limit_mib=memory,
             desired_count=desired_count,
             single_instance=True,
             cluster=cluster,
