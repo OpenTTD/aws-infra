@@ -1,6 +1,8 @@
 from aws_cdk.core import Construct
 from aws_cdk.aws_cloudfront import (
     BehaviorOptions,
+    CachePolicy,
+    CacheQueryStringBehavior,
     Distribution,
     EdgeLambda,
     ErrorResponse,
@@ -35,7 +37,6 @@ class S3CloudFrontV2(Construct):
         subdomain_name: str,
         additional_fqdns: Optional[List[str]] = None,
         error_folder: Optional[str] = None,
-        forward_query_string: Optional[bool] = None,
         forward_query_string_cache_keys: Optional[List[str]] = None,
         edge_lambdas: Optional[List[EdgeLambda]] = None,
         bucket_site: Optional[Bucket] = None,
@@ -77,6 +78,11 @@ class S3CloudFrontV2(Construct):
                 )
             ]
 
+        if forward_query_string_cache_keys is None:
+            query_string_behaviour = CacheQueryStringBehavior.none()
+        else:
+            query_string_behaviour = CacheQueryStringBehavior.allow_list(*forward_query_string_cache_keys)
+
         self.distribution = Distribution(
             self,
             "CloudFront",
@@ -86,8 +92,11 @@ class S3CloudFrontV2(Construct):
                 ),
                 viewer_protocol_policy=viewer_protocol_policy,
                 edge_lambdas=edge_lambdas,
-                forward_query_string=forward_query_string,
-                forward_query_string_cache_keys=forward_query_string_cache_keys,
+                cache_policy=CachePolicy(
+                    self,
+                    "CachePolicy",
+                    query_string_behavior=query_string_behaviour,
+                ),
             ),
             domain_names=[cert.fqdn] + additional_fqdns,
             certificate=cert.certificate,

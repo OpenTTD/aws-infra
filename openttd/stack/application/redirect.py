@@ -81,7 +81,6 @@ class RedirectStack(Stack):
                             function_version=func_version,
                         ),
                     ],
-                    forward_query_string=True,
                     forward_query_string_cache_keys=["do", "q"],
                 )
             else:

@@ -52,7 +52,7 @@ class CertificateStack(Stack):
 
         certificate = DnsValidatedCertificate(
             self,
-            f"{fqdn}-Certificate",
+            fqdn,
             hosted_zone=dns.get_hosted_zone(),
             domain_name=fqdn,
             subject_alternative_names=additional_fqdns,

@@ -93,7 +93,7 @@ class DomainAlias:
     def __init__(self, subdomain_name) -> None:
         self.subdomain_name = subdomain_name
 
-    def bind(self, _record):
+    def bind(self, _record, _zone):
         return {
             "hostedZoneId": dns.get_hosted_zone().hosted_zone_id,
             "dnsName": dns.subdomain_to_fqdn(self.subdomain_name),

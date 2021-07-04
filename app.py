@@ -145,19 +145,8 @@ for deployment in Deployment:
         env=env,
     )
 
-    # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
-    # connections between CloudFlare and CloudFront, we provision the
-    # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
-    if deployment == Deployment.PRODUCTION and maturity == Maturity.PRODUCTION:
-        additional_fqdns = [
-            "bananas.openttd-cdn.org",
-        ]
-    else:
-        additional_fqdns = None
-
     bananas_cdn = BananasCdnStack(app, f"{prefix}BananasCdn",
         deployment=deployment,
-        additional_fqdns=additional_fqdns,
         env=env,
     )
     bananas_api_policy = PolicyStack(app, f"{prefix}BananasApi-Policy", env=env).policy
@@ -280,34 +269,13 @@ for deployment in Deployment:
     )
 
     if deployment == Deployment.PRODUCTION:
-        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
-        # connections between CloudFlare and CloudFront, we provision the
-        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
-        if maturity == Maturity.PRODUCTION:
-            additional_fqdns = [
-                "www.openttd-cdn.org",
-                "openttd-cdn.org",
-            ]
-        else:
-            additional_fqdns = None
         CdnStack(app, f"{prefix}Cdn",
             deployment=deployment,
-            additional_fqdns=additional_fqdns,
             env=env,
         )
 
-        # openttd-cdn.org is served via CloudFlare. To allow strict HTTPS
-        # connections between CloudFlare and CloudFront, we provision the
-        # CloudFront to also accept openttd-cdn.org as domain via HTTPS.
-        if maturity == Maturity.PRODUCTION:
-            additional_fqdns = [
-                "installer.openttd-cdn.org",
-            ]
-        else:
-            additional_fqdns = None
         InstallerStack(app, f"{prefix}Installer",
             deployment=deployment,
-            additional_fqdns=additional_fqdns,
             env=env,
         )
 
