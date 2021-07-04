@@ -50,6 +50,7 @@ from openttd.stack.common.listener_https import ListenerHttpsStack
 from openttd.stack.common.nlb_self import NlbStack
 from openttd.stack.common.parameter_store import ParameterStoreStack
 from openttd.stack.common.policy import PolicyStack
+from openttd.stack.common.redis import RedisStack
 from openttd.stack.common.tasks import TasksStack
 from openttd.stack.common.vpc import VpcStack
 
