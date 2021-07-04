@@ -22,7 +22,7 @@ Secrets are not part of this repository; on `cdk synth` you will be told which s
 ### Common Deployment flow
 
 #### Staging deployments
-1. A new commit is pushed to `master` of a repository.
+1. A new commit is pushed to `main` of a repository.
 1. GitHub Actions create a new image and publishes this on GitHub Registry.
 1. GitHub Actions updates the Systems Manager Parameter Store with new tag.
 1. GitHub Actions triggers a redeploy of the staging version on CloudFormation.

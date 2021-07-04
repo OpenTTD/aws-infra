@@ -6,7 +6,7 @@ notifications:
 
   push:
     only:
-    - master
+    - main
   pull-request:
   issue:
   tag-created:
