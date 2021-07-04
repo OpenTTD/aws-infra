@@ -90,7 +90,7 @@ class EintsStack(Stack):
                 "--unstable-languages",
                 "unstable_languages",
                 "--project-cache",
-                "1",
+                "10",
                 "--project-types",
                 "openttd",
                 "--project-types",
