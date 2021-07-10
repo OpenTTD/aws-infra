@@ -249,7 +249,12 @@ class NlbStack(Stack):
         self.security_group.add_ingress_rule(
             peer=ecs_source_security_group,
             connection=Port.udp(8080),
-            description="ECS to target",
+            description="ECS to target (SOCKS UDP)",
+        )
+        self.security_group.add_ingress_rule(
+            peer=ecs_source_security_group,
+            connection=Port.tcp(8080),
+            description="ECS to target (SOCKS TCP)",
         )
 
         self.security_group.add_ingress_rule(
