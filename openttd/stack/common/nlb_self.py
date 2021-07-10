@@ -157,7 +157,7 @@ class NlbStack(Stack):
         user_data.add_commands(
             "echo 'Installing nginx'",
             "amazon-linux-extras install epel",
-            "yum install nginx -y",
+            "yum install nginx nginx-mod-stream -y",
             "cp /nlb/nginx.conf /etc/nginx/nginx.conf",
             "mkdir /etc/nginx/nlb.d",
         )
