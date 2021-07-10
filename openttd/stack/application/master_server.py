@@ -26,7 +26,7 @@ class MasterServerApiStack(Stack):
     application_name = "MasterServerApi"
     subdomain_name = "api.master"
 
-    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, redis_url, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -37,11 +37,11 @@ class MasterServerApiStack(Stack):
         if deployment == Deployment.PRODUCTION:
             desired_count = 2
             priority = 60
-            dynamodb_prefix = "P-"
+            database = 1
         else:
             desired_count = 1
             priority = 160
-            dynamodb_prefix = "S-"
+            database = 2
 
         sentry_dsn = parameter_store.add_secure_string(f"/MasterServerApi/{deployment.value}/SentryDSN").parameter
 
@@ -64,11 +64,9 @@ class MasterServerApiStack(Stack):
                 "--bind",
                 "0.0.0.0",
                 "--db",
-                "dynamodb",
-                "--dynamodb-region",
-                "eu-central-1",
-                "--dynamodb-prefix",
-                dynamodb_prefix,
+                "redis",
+                "--redis-url",
+                "redis://" + redis_url + "/" + str(database),
             ],
             environment={
                 "MASTER_SERVER_SENTRY_ENVIRONMENT": deployment.value.lower(),
@@ -110,7 +108,7 @@ class MasterServerStack(Stack):
     subdomain_name = "server.master"
     nlb_subdomain_name = "master"
 
-    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, redis_url, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         Tags.of(self).add("Application", self.application_name)
@@ -122,12 +120,12 @@ class MasterServerStack(Stack):
             desired_count = 2
             priority = 61
             master_port = 3978
-            dynamodb_prefix = "P-"
+            database = 1
         else:
             desired_count = 1
             priority = 161
             master_port = 4978
-            dynamodb_prefix = "S-"
+            database = 2
 
         sentry_dsn = parameter_store.add_secure_string(f"/MasterServer/{deployment.value}/SentryDSN").parameter
 
@@ -152,11 +150,9 @@ class MasterServerStack(Stack):
                 "--msu-port",
                 str(master_port),
                 "--db",
-                "dynamodb",
-                "--dynamodb-region",
-                self.region,
-                "--dynamodb-prefix",
-                dynamodb_prefix,
+                "redis",
+                "--redis-url",
+                "redis://" + redis_url + "/" + str(database),
                 "--proxy-protocol",
                 "--socks-proxy",
                 "socks5://nlb.openttd.internal:8080",

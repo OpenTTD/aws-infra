@@ -216,6 +216,7 @@ for deployment in Deployment:
         deployment=deployment,
         policy=master_server_policy,
         cluster=ecs.cluster,
+        redis_url=redis.redis.attr_redis_endpoint_address,
         env=env,
     )
 
@@ -224,6 +225,7 @@ for deployment in Deployment:
         deployment=deployment,
         policy=master_server_api_policy,
         cluster=ecs.cluster,
+        redis_url=redis.redis.attr_redis_endpoint_address,
         env=env,
     )
 
