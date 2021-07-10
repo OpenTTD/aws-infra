@@ -1,0 +1,11 @@
+[Unit]
+Description=UDP SOCKS proxy
+After=network.target
+
+[Service]
+ExecStart=/venv/bin/pproxy -ul socks5://0.0.0.0:8080
+Restart=on-failure
+User=pproxy
+
+[Install]
+WantedBy=multi-user.target

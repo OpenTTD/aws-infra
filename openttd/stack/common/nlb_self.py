@@ -177,12 +177,15 @@ class NlbStack(Stack):
         )
 
         user_data.add_commands(
-            "echo 'Setting up SOCKS proxy'",
+            "echo 'Setting up TCP and UDP SOCKS proxy'",
             "useradd pproxy",
-            "cp /nlb/pproxy.service /etc/systemd/system/",
+            "cp /nlb/pproxy-tcp.service /etc/systemd/system/",
+            "cp /nlb/pproxy-udp.service /etc/systemd/system/",
             "systemctl daemon-reload",
-            "systemctl enable pproxy.service",
-            "systemctl start pproxy.service",
+            "systemctl enable pproxy-tcp.service",
+            "systemctl enable pproxy-udp.service",
+            "systemctl start pproxy-tcp.service",
+            "systemctl start pproxy-udp.service",
         )
 
         asg = AutoScalingGroup(
