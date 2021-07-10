@@ -67,8 +67,8 @@ class GameCoordinatorStack(Stack):
                 "--redis-url",
                 "redis://" + redis_url + "/" + str(database),
                 "--proxy-protocol",
-                # "--socks-proxy",
-                # "socks5://nlb.openttd.internal:8080",
+                "--socks-proxy",
+                "socks5://nlb.openttd.internal:8080",
             ],
             environment={
                 "GAME_COORDINATOR_SENTRY_ENVIRONMENT": deployment.value.lower(),
