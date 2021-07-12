@@ -43,6 +43,7 @@ class GameCoordinatorStack(Stack):
             database = 2
 
         sentry_dsn = parameter_store.add_secure_string(f"/GameCoordinator/{deployment.value}/SentryDSN").parameter
+        shared_secret = parameter_store.add_secure_string(f"/GameCoordinator/{deployment.value}/SharedSecret").parameter
 
         self.container = ECSHTTPSContainer(
             self,
@@ -75,6 +76,7 @@ class GameCoordinatorStack(Stack):
             },
             secrets={
                 "GAME_COORDINATOR_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
+                "GAME_COORDINATOR_SHARED_SECRET": Secret.from_ssm_parameter(shared_secret),
             },
         )
 
