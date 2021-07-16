@@ -59,6 +59,8 @@ class GameCoordinatorStack(Stack):
             cluster=cluster,
             priority=priority,
             command=[
+                "--app",
+                "coordinator",
                 "--bind",
                 "0.0.0.0",
                 "--coordinator-port",
@@ -82,3 +84,67 @@ class GameCoordinatorStack(Stack):
 
         self.container.add_port(coordinator_port)
         nlb.add_nlb(self, self.container.service, Port.tcp(coordinator_port), self.nlb_subdomain_name, "Game Coordinator")
+
+
+class StunServerStack(Stack):
+    application_name = "StunServer"
+    subdomain_name = "server.stun"
+    nlb_subdomain_name = "stun"
+
+    def __init__(self, scope: Construct, id: str, *, deployment: Deployment, policy: Policy, cluster: ICluster, redis_url, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        Tags.of(self).add("Application", self.application_name)
+        Tags.of(self).add("Deployment", deployment.value)
+
+        policy.add_stack(self)
+
+        if deployment == Deployment.PRODUCTION:
+            desired_count = 2
+            priority = 64
+            stun_port = 3975
+            database = 1
+        else:
+            desired_count = 1
+            priority = 164
+            stun_port = 4975
+            database = 2
+
+        sentry_dsn = parameter_store.add_secure_string(f"/StunServer/{deployment.value}/SentryDSN").parameter
+
+        self.container = ECSHTTPSContainer(
+            self,
+            self.application_name,
+            subdomain_name=self.subdomain_name,
+            deployment=deployment,
+            policy=policy,
+            application_name=self.application_name,
+            image_name="ghcr.io/openttd/game-coordinator",
+            port=80,
+            memory_limit_mib=64,
+            desired_count=desired_count,
+            cluster=cluster,
+            priority=priority,
+            command=[
+                "--app",
+                "stun",
+                "--bind",
+                "0.0.0.0",
+                "--stun-port",
+                str(stun_port),
+                "--db",
+                "redis",
+                "--redis-url",
+                "redis://" + redis_url + "/" + str(database),
+                "--proxy-protocol",
+            ],
+            environment={
+                "GAME_COORDINATOR_SENTRY_ENVIRONMENT": deployment.value.lower(),
+            },
+            secrets={
+                "GAME_COORDINATOR_SENTRY_DSN": Secret.from_ssm_parameter(sentry_dsn),
+            },
+        )
+
+        self.container.add_port(stun_port)
+        nlb.add_nlb(self, self.container.service, Port.tcp(stun_port), self.nlb_subdomain_name, "STUN Server")

@@ -26,7 +26,10 @@ from openttd.stack.application.dorpsgek import DorpsgekStack
 from openttd.stack.application.eints import EintsStack
 from openttd.stack.application.flyspray import FlysprayStack
 from openttd.stack.application.installer import InstallerStack
-from openttd.stack.application.game_coordinator import GameCoordinatorStack
+from openttd.stack.application.game_coordinator import (
+    GameCoordinatorStack,
+    StunServerStack,
+)
 from openttd.stack.application.master_server import (
     MasterServerStack,
     MasterServerApiStack,
@@ -241,6 +244,15 @@ for deployment in Deployment:
     GameCoordinatorStack(app, f"{prefix}GameCoordinator",
         deployment=deployment,
         policy=game_coordinator_policy,
+        cluster=ecs.cluster,
+        redis_url=redis.redis.attr_redis_endpoint_address,
+        env=env,
+    )
+
+    stun_server_policy = PolicyStack(app, f"{prefix}StunServer-Policy", env=env).policy
+    StunServerStack(app, f"{prefix}StunServer",
+        deployment=deployment,
+        policy=stun_server_policy,
         cluster=ecs.cluster,
         redis_url=redis.redis.attr_redis_endpoint_address,
         env=env,
