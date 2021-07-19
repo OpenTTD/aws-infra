@@ -29,6 +29,7 @@ from openttd.stack.application.installer import InstallerStack
 from openttd.stack.application.game_coordinator import (
     GameCoordinatorStack,
     StunServerStack,
+    TurnServerStack,
 )
 from openttd.stack.application.master_server import (
     MasterServerStack,
@@ -253,6 +254,15 @@ for deployment in Deployment:
     StunServerStack(app, f"{prefix}StunServer",
         deployment=deployment,
         policy=stun_server_policy,
+        cluster=ecs.cluster,
+        redis_url=redis.redis.attr_redis_endpoint_address,
+        env=env,
+    )
+
+    turn_server_policy = PolicyStack(app, f"{prefix}TurnServer-Policy", env=env).policy
+    TurnServerStack(app, f"{prefix}TurnServer",
+        deployment=deployment,
+        policy=turn_server_policy,
         cluster=ecs.cluster,
         redis_url=redis.redis.attr_redis_endpoint_address,
         env=env,
