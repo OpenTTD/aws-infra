@@ -12,6 +12,7 @@ from openttd.enumeration import Deployment
 
 class TestStack(Stack):
     """Test Stack for actions repository, so we can validate deploy-aws action works."""
+
     application_name = "Test"
 
     def __init__(
