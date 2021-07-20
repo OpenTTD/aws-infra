@@ -59,6 +59,7 @@ class ECSHTTPSContainer(Construct):
         volumes: Mapping[str, Volume] = {},
         target_group: Optional[ApplicationTargetGroup] = None,
         single_instance: bool = False,
+        image: ImageFromParameterStore = None,
     ) -> None:
         super().__init__(scope, id)
 
@@ -73,13 +74,14 @@ class ECSHTTPSContainer(Construct):
             log_group=log_group,
         )
 
-        image = ImageFromParameterStore(
-            self,
-            "ImageName",
-            parameter_name=f"/Version/{deployment.value}/{application_name}",
-            image_name=image_name,
-            policy=policy,
-        )
+        if image is None:
+            image = ImageFromParameterStore(
+                self,
+                "ImageName",
+                parameter_name=f"/Version/{deployment.value}/{application_name}",
+                image_name=image_name,
+                policy=policy,
+            )
 
         task_definition = Ec2TaskDefinition(
             self,

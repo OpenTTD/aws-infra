@@ -10,6 +10,7 @@ from aws_cdk.aws_ecs import (
 from aws_cdk.aws_ec2 import Port
 
 from openttd.construct.ecs_https_container import ECSHTTPSContainer
+from openttd.construct.image_from_parameter_store import ImageFromParameterStore
 from openttd.construct.policy import Policy
 from openttd.enumeration import Deployment
 from openttd.stack.common import (
@@ -177,6 +178,14 @@ class TurnServerStack(Stack):
 
         sentry_dsn = parameter_store.add_secure_string(f"/TurnServer/{deployment.value}/SentryDSN").parameter
 
+        image = ImageFromParameterStore(
+            self,
+            "ImageName",
+            parameter_name=f"/Version/{deployment.value}/{self.application_name}",
+            image_name="ghcr.io/openttd/game-coordinator",
+            policy=policy,
+        )
+
         for index in range(1, desired_count + 1):
             container = ECSHTTPSContainer(
                 self,
@@ -185,7 +194,8 @@ class TurnServerStack(Stack):
                 deployment=deployment,
                 policy=policy,
                 application_name=f"{self.application_name}-{index}",
-                image_name="ghcr.io/openttd/game-coordinator",
+                image_name=None,
+                image=image,
                 port=80,
                 memory_limit_mib=64,
                 desired_count=1,
