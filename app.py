@@ -39,6 +39,7 @@ from openttd.stack.application.master_server import (
 from openttd.stack.application.openttd_com import OpenttdComStack
 from openttd.stack.application.preview import PreviewStack
 from openttd.stack.application.redirect import RedirectStack
+from openttd.stack.application.test import TestStack
 from openttd.stack.application.website import WebsiteStack
 from openttd.stack.application.wiki import (
     WikiReload,
@@ -307,6 +308,15 @@ for deployment in Deployment:
         vpc=vpc.vpc,
         env=env,
     )
+
+    if deployment == Deployment.STAGING:
+        test_policy = PolicyStack(app, f"{prefix}Test-Policy", env=env).policy
+        test_policy.add_cluster(ecs.cluster)
+        TestStack(app, f"{prefix}Test",
+            deployment=deployment,
+            policy=test_policy,
+            env=env,
+        )
 
     if deployment == Deployment.PRODUCTION:
         CdnStack(app, f"{prefix}Cdn",
